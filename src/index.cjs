@@ -40,5 +40,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 AI Risk Manager running on port ${PORT}`);
+  console.log(`AI Risk Manager running on port ${PORT}`);
 });
