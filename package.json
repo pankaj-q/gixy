@@ -1,0 +1,41 @@
+{
+  "name": "gixy",
+  "version": "1.0.0",
+  "description": "AI Risk Manager - A comprehensive platform for managing AI model risks, compliance, and monitoring",
+  "main": "src/index.cjs",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.cjs",
+    "dev": "nodemon src/index.cjs",
+    "test": "echo \"Run tests with pytest or Jest\" && exit 0",
+    "lint": "eslint .",
+    "build": "echo \"Build step\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pankaj-q/gixy.git"
+  },
+  "keywords": [
+    "ai",
+    "risk",
+    "management",
+    "compliance",
+    "monitoring"
+  ],
+  "author": "pankaj-q",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pankaj-q/gixy/issues"
+  },
+  "homepage": "https://github.com/pankaj-q/gixy#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "mongoose": "^9.9.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
