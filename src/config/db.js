@@ -1,46 +1,42 @@
 import mongoose from 'mongoose';
 import config from './index.js';
 
+let dbConnection = null;
+
 export async function connectDB() {
   try {
-    const conn = await mongoose.connect(config.mongodbUri);
+    const conn = await mongoose.connect(config.mongodbUri, {
+      serverSelectionTimeoutMS: 5000,
+    });
 
+    dbConnection = conn;
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+
+    conn.on('error', (err) => {
+      console.error('❌ MongoDB error:', err);
+    });
+
+    conn.on('disconnected', () => {
+      console.log('📤 MongoDB disconnected');
+    });
+
     return conn;
   } catch (error) {
-    console.error(`❌ MongoDB connection error: ${error.message}`);
-    process.exit(1);
+    console.warn('� MongoDB connection failed - continuing without database');
+    dbConnection = null;
+    return null;
   }
 }
 
 export function disconnectDB() {
-  mongoose.connection.close()
-    .then(() => console.log('🔒 MongoDB disconnected'))
-    .catch(err => console.error('Error disconnecting MongoDB:', err));
+  if (dbConnection) {
+    mongoose.connection.close()
+      .then(() => console.log('🔒 MongoDB disconnected'))
+      .catch(err => console.error('Error disconnecting MongoDB:', err));
+  }
 }
 
-// Connection event listeners
-mongoose.connection.on('connected', () => {
-  console.log('📡 Mongoose connected to DB');
-});
+// Export the connection state for use elsewhere
+export { dbConnection };
 
-mongoose.connection.on('error', (err) => {
-  console.error('❌ Mongoose connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('📤 Mongoose disconnected');
-});
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('🛑 SIGTERM received. Shutting down gracefully...');
-  await disconnectDB();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('🛑 SIGINT received. Shutting down gracefully...');
-  await disconnectDB();
-  process.exit(0);
-});
+// Do not auto-exit on connection failure - let the app continue
