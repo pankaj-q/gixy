@@ -1,7 +1,9 @@
 import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import RiskEngine from '../engine/riskEngine.js';
+import RiskModel from '../models/riskModel.js';
 
 const router = Router();
+const riskEngine = new RiskEngine();
 
 // Health check
 router.get('/health', (req, res) => {
@@ -10,60 +12,82 @@ router.get('/health', (req, res) => {
 
 // Risk assessment endpoint
 router.post('/risk/assess', asyncHandler(async (req, res) => {
-  const { modelId, modelName, riskFactors } = req.body;
-  const riskScore = calculateRiskScore(riskFactors || []);
+  const { modelId, modelName, riskFactors, trainingData, modelConfig, metrics } = req.body;
+
+  const riskModel = riskEngine.assessFullRisk({
+    modelId,
+    modelName,
+    riskFactors,
+    trainingData,
+    modelConfig,
+    metrics,
+  });
+
   res.json({
     success: true,
-    data: {
-      modelId,
-      modelName,
-      riskScore,
-      assessmentId: `assessment_${Date.now()}`,
-      timestamp: new Date().toISOString(),
-    },
+    data: riskModel.toJSON(),
     message: 'Risk assessment completed',
   });
 }));
 
 // Model registry endpoint
 router.get('/models', asyncHandler(async (req, res) => {
+  const { modelId } = req.query;
+  const model = new RiskModel({ modelId, modelName: 'Sample Model' });
+
   res.json({
     success: true,
-    data: [],
-    message: 'Model list retrieved',
+    data: model.toJSON(),
+    message: modelId ? 'Model retrieved' : 'Model list retrieved',
+  });
+}));
+
+// Quick risk check endpoint
+router.post('/risk/quick-check', asyncHandler(async (req, res) => {
+  const { modelId, modelName, riskFactors } = req.body;
+
+  const quickCheck = riskEngine.quickRiskCheck({
+    modelId,
+    modelName,
+    riskFactors,
+  });
+
+  res.json({
+    success: true,
+    data: quickCheck,
+    message: 'Quick risk check completed',
   });
 }));
 
 // Compliance check endpoint
 router.post('/compliance/check', asyncHandler(async (req, res) => {
-  const { modelId, framework } = req.body;
+  const { modelId, framework = 'eu-ai-act' } = req.body;
+
+  // Basic compliance validation based on risk score
+  const riskAssessment = riskEngine.quickRiskCheck({
+    modelId,
+    modelName: `model-${modelId}`,
+    riskFactors: [],
+  });
+
+  const compliant = riskAssessment.riskScore < 70;
+
   res.json({
     success: true,
     data: {
       modelId,
       framework,
-      compliant: true,
-      violations: [],
+      compliant,
+      violations: compliant ? [] : ['Risk score exceeds threshold of 70'],
     },
-    message: 'Compliance check completed',
+    message: compliant ? 'Model compliant with framework' : 'Model does not comply with framework',
   });
 }));
 
-function calculateRiskScore(factors) {
-  const baseScore = 50;
-  const factorWeights = {
-    bias: 15,
-    security: 20,
-    performance: 10,
-    compliance: 15,
-    safety: 25,
+function asyncHandler(fn) {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
   };
-  let deduction = 0;
-  factors.forEach((factor) => {
-    deduction += (factorWeights[factor] || 5);
-  });
-  const score = Math.max(0, Math.min(100, baseScore - deduction));
-  return { score, severity: score > 70 ? 'high' : score > 40 ? 'medium' : 'low' };
 }
 
 export default router;
