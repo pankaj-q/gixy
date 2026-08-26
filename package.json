@@ -2,11 +2,11 @@
   "name": "gixy",
   "version": "1.0.0",
   "description": "AI Risk Manager - A comprehensive platform for managing AI model risks, compliance, and monitoring",
-  "main": "src/index.cjs",
-  "type": "commonjs",
+  "main": "src/index.mjs",
+  "type": "module",
   "scripts": {
-    "start": "node src/index.cjs",
-    "dev": "nodemon src/index.cjs",
+    "start": "node src/index.mjs",
+    "dev": "nodemon src/index.mjs",
     "test": "echo \"Run tests with pytest or Jest\" && exit 0",
     "lint": "eslint .",
     "build": "echo \"Build step\" && exit 0"
@@ -33,6 +33,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^8.3.0",
+    "joi": "^18.2.5",
     "mongoose": "^9.9.4"
   },
   "devDependencies": {

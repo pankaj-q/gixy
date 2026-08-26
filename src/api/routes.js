@@ -1,4 +1,6 @@
-const { Router } = require('express');
+import { Router } from 'express';
+import { asyncHandler } from '../middleware/errorHandler.js';
+
 const router = Router();
 
 // Health check
@@ -7,7 +9,7 @@ router.get('/health', (req, res) => {
 });
 
 // Risk assessment endpoint
-router.post('/risk/assess', (req, res) => {
+router.post('/risk/assess', asyncHandler(async (req, res) => {
   const { modelId, modelName, riskFactors } = req.body;
   const riskScore = calculateRiskScore(riskFactors || []);
   res.json({
@@ -21,19 +23,19 @@ router.post('/risk/assess', (req, res) => {
     },
     message: 'Risk assessment completed',
   });
-});
+}));
 
 // Model registry endpoint
-router.get('/models', (req, res) => {
+router.get('/models', asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: [],
     message: 'Model list retrieved',
   });
-});
+}));
 
 // Compliance check endpoint
-router.post('/compliance/check', (req, res) => {
+router.post('/compliance/check', asyncHandler(async (req, res) => {
   const { modelId, framework } = req.body;
   res.json({
     success: true,
@@ -45,7 +47,7 @@ router.post('/compliance/check', (req, res) => {
     },
     message: 'Compliance check completed',
   });
-});
+}));
 
 function calculateRiskScore(factors) {
   const baseScore = 50;
@@ -64,4 +66,4 @@ function calculateRiskScore(factors) {
   return { score, severity: score > 70 ? 'high' : score > 40 ? 'medium' : 'low' };
 }
 
-module.exports = router;
+export default router;
