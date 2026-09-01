@@ -59,10 +59,10 @@ export default class SecurityAnalyzer {
   }
 
   _assessPrivacyViolation(trainingData, modelConfig) {
-    const dataSensitivity = trainingData.sensitivityLabel ? trainingData.sensitivityLabel : 'medium';
+    const dataSensitivity = (trainingData?.sensitivityLabel) ? trainingData.sensitivityLabel : 'medium';
     const sensitivityScores = { low: 15, medium: 50, high: 80, critical: 95 };
     const baseScore = sensitivityScores[dataSensitivity] || 50;
-    const configMitigation = modelConfig.privacyBudget ? 20 : 0;
+    const configMitigation = modelConfig?.privacyBudget ? 20 : 0;
     const score = Math.min(100, baseScore + configMitigation);
     return { threat: 'privacy_violation', riskScore: score, severity: score > 70 ? 'high' : score > 40 ? 'medium' : 'low' };
   }
@@ -82,5 +82,28 @@ export default class SecurityAnalyzer {
   _calculateOverallRisk(threatAssessments) {
     const totalScore = threatAssessments.reduce((sum, t) => sum + t.riskScore, 0);
     return Math.round(totalScore / threatAssessments.length);
+  }
+
+  _assessDataQuality(trainingData) {
+    if (!trainingData) return 50;
+    
+    let quality = 50;
+    
+    if (trainingData.size) {
+      // Larger datasets generally have better quality
+      quality += Math.min(20, Math.log10(trainingData.size) * 5);
+    }
+    
+    if (trainingData.stats) {
+      // Has statistics available
+      quality += 10;
+    }
+    
+    if (trainingData.sensitivityLabel) {
+      // Data is labeled
+      quality += 10;
+    }
+    
+    return Math.min(100, Math.max(0, quality));
   }
 }

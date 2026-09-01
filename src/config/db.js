@@ -1,31 +1,71 @@
 import mongoose from 'mongoose';
-import config from './index.js';
 
 let dbConnection = null;
+let isConnecting = false;
 
-export async function connectDB() {
-  try {
-    const conn = await mongoose.connect(config.mongodbUri, {
-      serverSelectionTimeoutMS: 5000,
-    });
+// Allow overriding the URI via environment variable (useful for tests)
+// This works across Jest's separate processes for globalSetup
+function getMongoUri() {
+  return process.env.MONGODB_URI_TEST_OVERRIDE || process.env.MONGODB_URI;
+}
 
-    dbConnection = conn;
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-
-    conn.on('error', (err) => {
-      console.error('❌ MongoDB error:', err);
-    });
-
-    conn.on('disconnected', () => {
-      console.log('📤 MongoDB disconnected');
-    });
-
-    return conn;
-  } catch (error) {
-    console.warn('� MongoDB connection failed - continuing without database');
-    dbConnection = null;
-    return null;
+export async function connectDB(maxRetries = 5, retryDelay = 2000) {
+  // If already connected or connecting, return existing connection
+  if (dbConnection && mongoose.connection.readyState === 1) {
+    return dbConnection;
   }
+  
+  if (isConnecting) {
+    // Wait for existing connection attempt
+    while (isConnecting) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return dbConnection;
+  }
+
+  isConnecting = true;
+  
+  // Get MongoDB URI from environment (works across Jest processes)
+  const uri = getMongoUri();
+  
+  console.log(`🔍 Connecting to MongoDB: ${uri}`);
+  
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 10000,
+        bufferCommands: true, // Enable buffering for better test compatibility
+      });
+
+      dbConnection = mongoose.connection;
+      console.log(`✅ MongoDB Connected: ${dbConnection.host}`);
+
+      dbConnection.on('error', (err) => {
+        console.error('❌ MongoDB error:', err);
+      });
+
+      dbConnection.on('disconnected', () => {
+        console.log('📤 MongoDB disconnected');
+      });
+
+      isConnecting = false;
+      return dbConnection;
+    } catch (error) {
+      lastError = error;
+      console.warn(`⚠️ MongoDB connection attempt ${attempt}/${maxRetries} failed: ${error.message}`);
+      
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
+  
+  console.warn('⚠️ MongoDB connection failed after all retries - continuing without database');
+  dbConnection = null;
+  isConnecting = false;
+  return null;
 }
 
 export function disconnectDB() {

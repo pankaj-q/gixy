@@ -5,7 +5,7 @@ dotenv.config();
 
 const envSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
-  PORT: Joi.number().default(3000),
+  PORT: Joi.number().default(3007),
   MONGODB_URI: Joi.string().default('mongodb://localhost:27017/gixy'),
   JWT_SECRET: Joi.string().default('your_jwt_secret_key_here'),
   JWT_EXPIRY: Joi.string().default('24h'),

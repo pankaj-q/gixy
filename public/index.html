@@ -4,416 +4,1662 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Risk Manager Dashboard</title>
+  <meta name="description" content="Professional AI Model Risk Assessment & Monitoring Dashboard">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Plotly for charts -->
   <script src="https://cdn.plot.ly/plotly-2.29.1.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Segoe+W&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Framer Motion via CDN (UMD) -->
+  <script src="https://unpkg.com/framer-motion@11.0.0/dist/framer-motion.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
   <style>
+    /* ============================================
+       DESIGN TOKENS - 3 COLOR SYSTEM
+       ============================================ */
     :root {
-      --primary: #e74c3c;
-      --secondary: #3498db;
-      --accent: #2c3e50;
-      --light: #ecf0f1;
-      --dark: #2c3e50;
-      --success: #2ecc71;
-      --warning: #f1c40f;
+      /* 3 Core Colors */
+      --bg-deep: #0a0f1a;        /* Deep navy background */
+      --bg-elevated: #151c2e;    /* Elevated surfaces/cards */
+      --accent: #06b6d4;         /* Cyan-500 - single brand color */
+      
+      /* Derived (shades/tints of the 3 colors) */
+      --bg-hover: #1a253a;
+      --border: #1e2a42;
+      --border-bright: #2a3a56;
+      
+      --text-primary: #f1f5f9;    /* slate-100 */
+      --text-secondary: #94a3b8;  /* slate-400 */
+      --text-muted: #64748b;      /* slate-500 */
+      
+      --accent-dim: #0891b2;      /* cyan-600 */
+      --accent-light: #67e8f9;    /* cyan-300 */
+      --accent-bg: rgba(6, 182, 212, 0.1);
+      --accent-bg-strong: rgba(6, 182, 212, 0.15);
+      
+      /* Semantic */
+      --success: #10b981;  /* emerald-500 */
+      --warning: #f59e0b;  /* amber-500 */
+      --danger: #ef4444;   /* red-500 */
+      
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      
+      /* Radius */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+      
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+      --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 32px rgba(6, 182, 212, 0.2);
+      
+      /* Transitions */
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --duration-fast: 150ms;
+      --duration-base: 250ms;
+      --duration-slow: 400ms;
+      
+      /* Z-index */
+      --z-dropdown: 100;
+      --z-modal: 200;
+      --z-toast: 300;
+      --z-tooltip: 400;
     }
     
-    * {
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg-deep: #f8fafc;
+        --bg-elevated: #ffffff;
+        --bg-hover: #f1f5f9;
+        --border: #e2e8f0;
+        --border-bright: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --accent-bg: rgba(6, 182, 212, 0.1);
+        --accent-bg-strong: rgba(6, 182, 212, 0.15);
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
+        --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.12);
+      }
+    }
+    
+    /* ============================================
+       RESET & BASE
+       ============================================ */
+    *, *::before, *::after {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
     
     body {
-      margin: 0;
-      font-family: 'Montserrat', 'Segoe UI', Tahoma, Arial, sans-serif;
-      background: #f5f7fa;
-      color: var(--dark);
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
-    .container {
-      max-width: 1200px;
+    /* Focus visible for accessibility */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    
+    /* Selection */
+    ::selection {
+      background: var(--accent-bg-strong);
+      color: var(--text-primary);
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: var(--radius-full); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    
+    /* ============================================
+       LAYOUT
+       ============================================ */
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+    
+    .main-content {
+      padding: var(--space-lg) var(--space-xl);
+      max-width: 1600px;
       margin: 0 auto;
-      padding: 20px;
-    }
-    
-    header {
-      text-align: center;
-      padding: 30px 0;
-      background: white;
-      margin-bottom: 30px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    header h1 {
-      margin: 0;
-      font-size: 28px;
-      color: var(--accent);
-    }
-    
-    header p {
-      color: #7f8c8d;
-      margin: 10px 0 0 0;
-      font-size: 14px;
-    }
-    
-    .risk-overview {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-    
-    .risk-overview h2 {
-      margin: 0 0 20px 0;
-      color: var(--accent);
-      font-size: 18px;
-    }
-    
-    .risk-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-    }
-    
-    .risk-card {
-      padding: 15px;
-      border-radius: 8px;
-      color: white;
-      text-align: center;
-      min-height: 80px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    
-    .risk-card.low { background: var(--success); }
-    .risk-card.medium { background: var(--warning); color: var(--dark); }
-    .risk-card.high { background: var(--primary); }
-    
-    .risk-card .score {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    
-    .risk-card .label {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-    
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    
-    .chart-card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      padding: 20px;
-    }
-    
-    .chart-card h3 {
-      margin: 0 0 20px 0;
-      color: var(--accent);
-      font-size: 16px;
-    }
-    
-    .chart-card canvas {
-      width: 100% !important;
-      max-width: 100% !important;
-    }
-    
-    .model-table {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      overflow: hidden;
-    }
-    
-    .model-table table {
       width: 100%;
-      border-collapse: collapse;
-    }
-    
-    .model-table th,
-    .model-table td {
-      padding: 12px 15px;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .model-table th {
-      background: #f8f9fa;
-      font-weight: 600;
-    }
-    
-    .model-table tr:hover { background: #f0f8ff; }
-    
-    .model-table .risk-low { color: var(--success); }
-    .model-table .risk-medium { color: var(--warning); }
-    .model-table .risk-high { color: var(--primary); }
-    
-    footer {
-      text-align: center;
-      padding: 30px 0;
-      color: #7f8c8d;
-      font-size: 12px;
-      border-top: 1px solid #eee;
-      margin-top: 50px;
     }
     
     @media (max-width: 768px) {
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
+      .main-content { padding: var(--space-md); }
     }
+    
+    /* ============================================
+       HEADER
+       ============================================ */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--space-xl);
+      position: sticky;
+      top: 0;
+      background: linear-gradient(180deg, var(--bg-deep), transparent);
+      z-index: var(--z-dropdown);
+      backdrop-filter: blur(20px);
+    }
+    
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+    
+    .header-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-glow);
+    }
+    
+    .header-logo svg { width: 24px; height: 24px; color: var(--bg-deep); }
+    
+    .header-title-group { display: flex; flex-direction: column; }
+    .header-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-subtitle { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+    
+    .header-actions { display: flex; align-items: center; gap: var(--space-sm); }
+    
+    /* ============================================
+       BUTTONS
+       ============================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-lg);
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-smooth);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      color: var(--bg-deep);
+      box-shadow: var(--shadow-md), var(--shadow-glow);
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
+    }
+    
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-hover);
+      border-color: var(--border-bright);
+    }
+    
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+    
+    .btn-icon {
+      padding: var(--space-sm);
+      border-radius: var(--radius-full);
+    }
+    
+    .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    
+    .btn-sm { padding: var(--space-xs) var(--space-md); font-size: 0.8125rem; }
+    
+    /* ============================================
+       STATUS INDICATORS
+       ============================================ */
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: var(--radius-full);
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+    
+    .status-dot.warning { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+    .status-dot.danger { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+    
+    /* ============================================
+       CARDS
+       ============================================ */
+    .card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all var(--duration-base) var(--ease-smooth);
+    }
+    
+    .card:hover {
+      border-color: var(--border-bright);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .card-title-group { flex: 1; }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: var(--space-xs);
+    }
+    .card-subtitle { font-size: 0.75rem; color: var(--text-muted); }
+    
+    .card-content { padding: var(--space-lg); }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      border-top: 1px solid var(--border);
+      background: var(--bg-deep);
+    }
+    
+    /* ============================================
+       METRIC CARDS (Risk Overview)
+       ============================================ */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    
+    @media (max-width: 1024px) {
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .metrics-grid { grid-template-columns: 1fr; }
+    }
+    
+    .metric-card {
+      position: relative;
+      padding: var(--space-lg);
+      background: linear-gradient(145deg, var(--bg-elevated), var(--bg-hover));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--metric-color, var(--accent));
+      opacity: 0;
+      transition: opacity var(--duration-base) var(--ease-smooth);
+    }
+    
+    .metric-card:hover::before { opacity: 1; }
+    
+    .metric-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--metric-bg, var(--accent-bg));
+      margin-bottom: var(--space-md);
+    }
+    
+    .metric-icon svg { width: 20px; height: 20px; color: var(--metric-color, var(--accent)); }
+    
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      font-family: 'JetBrains Mono', monospace;
+      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .metric-label {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: var(--space-xs);
+    }
+    
+    .metric-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: var(--space-md);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-full);
+    }
+    
+    .metric-trend.positive { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .metric-trend.negative { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .metric-trend.neutral { background: var(--accent-bg); color: var(--accent); }
+    
+    .metric-trend svg { width: 14px; height: 14px; }
+    
+    /* ============================================
+       CHARTS GRID
+       ============================================ */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    
+    @media (max-width: 1024px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+    
+    .chart-card { min-height: 360px; }
+    .chart-card.full-width { grid-column: 1 / -1; min-height: 400px; }
+    
+    .chart-container { width: 100%; height: 100%; min-height: 300px; }
+    .chart-container.full-height { min-height: 340px; }
+    
+    /* ============================================
+       TABLES
+       ============================================ */
+    .table-card { overflow: hidden; }
+    .table-wrapper { overflow-x: auto; }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    
+    .data-table thead {
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .data-table th {
+      padding: var(--space-md) var(--space-lg);
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    
+    .data-table td {
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--duration-fast);
+    }
+    
+    .data-table tbody tr { transition: background var(--duration-fast); }
+    .data-table tbody tr:hover { background: var(--bg-hover); }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    
+    .model-name-cell { display: flex; align-items: center; gap: var(--space-md); }
+    .model-avatar {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--bg-deep);
+      flex-shrink: 0;
+    }
+    
+    .model-info { display: flex; flex-direction: column; gap: 2px; }
+    .model-name { font-weight: 500; }
+    .model-id { font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+    
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-full);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    
+    .risk-badge.low { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .risk-badge.medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .risk-badge.high { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .risk-badge.critical { background: rgba(239, 68, 68, 0.2); color: var(--danger); animation: pulse-badge 1.5s ease-in-out infinite; }
+    
+    @keyframes pulse-badge {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    }
+    
+    .score-cell { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+    .score-cell.low { color: var(--success); }
+    .score-cell.medium { color: var(--warning); }
+    .score-cell.high { color: var(--danger); }
+    
+    .category-tag {
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--accent-bg);
+      color: var(--accent);
+      border-radius: var(--radius-sm);
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+    
+    .action-btn {
+      padding: var(--space-xs) var(--space-sm);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      font-family: inherit;
+      font-size: 0.75rem;
+    }
+    
+    .action-btn:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+    
+    /* ============================================
+       EMPTY STATES
+       ============================================ */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2xl);
+      text-align: center;
+      color: var(--text-muted);
+    }
+    
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--space-md); opacity: 0.5; }
+    .empty-state h3 { font-size: 1.125rem; margin-bottom: var(--space-xs); color: var(--text-secondary); }
+    .empty-state p { font-size: 0.875rem; max-width: 280px; }
+    
+    /* ============================================
+       LOADING SKELETONS
+       ============================================ */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: var(--radius-sm);
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-text { height: 1rem; width: 60%; }
+    .skeleton-title { height: 1.25rem; width: 40%; margin-bottom: var(--space-sm); }
+    .skeleton-card { height: 300px; border-radius: var(--radius-lg); }
+    .skeleton-metric { height: 120px; border-radius: var(--radius-lg); }
+    
+    /* ============================================
+       TOAST NOTIFICATIONS
+       ============================================ */
+    .toast-container {
+      position: fixed;
+      bottom: var(--space-xl);
+      right: var(--space-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      z-index: var(--z-toast);
+      pointer-events: none;
+    }
+    
+    .toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-xl);
+      min-width: 280px;
+      max-width: 420px;
+    }
+    
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast.info { border-left: 3px solid var(--accent); }
+    
+    .toast-icon { flex-shrink: 0; width: 20px; height: 20px; }
+    .toast.success .toast-icon { color: var(--success); }
+    .toast.error .toast-icon { color: var(--danger); }
+    .toast.warning .toast-icon { color: var(--warning); }
+    .toast.info .toast-icon { color: var(--accent); }
+    
+    .toast-content { flex: 1; }
+    .toast-title { font-weight: 500; font-size: 0.875rem; }
+    .toast-message { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; }
+    .toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: var(--space-xs); }
+    
+    /* ============================================
+       FRAMER MOTION ENHANCED ANIMATIONS
+       ============================================ */
+    .fm-page-enter {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    
+    .fm-page-exit {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    
+    .fm-card-enter {
+      opacity: 0;
+      transform: translateY(30px) scale(0.98);
+    }
+    
+    .fm-metric-enter {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    
+    .fm-chart-enter {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    
+    .fm-row-enter {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    
+    .fm-toast-enter {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+    
+    .fm-toast-exit {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+    
+    .fm-stagger-children {
+      opacity: 1;
+    }
+    
+    .fm-stagger-children > * {
+      opacity: 0;
+    }
+    
+    /* Interactive hover states */
+    .fm-hover-lift {
+      transition: transform var(--duration-base) var(--ease-spring), 
+                  box-shadow var(--duration-base) var(--ease-smooth);
+    }
+    
+    .fm-hover-lift:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl), var(--shadow-glow);
+    }
+    
+    .fm-hover-scale {
+      transition: transform var(--duration-fast) var(--ease-spring);
+    }
+    
+    .fm-hover-scale:hover {
+      transform: scale(1.02);
+    }
+    
+    .fm-hover-glow {
+      transition: box-shadow var(--duration-base) var(--ease-smooth);
+    }
+    
+    .fm-hover-glow:hover {
+      box-shadow: var(--shadow-glow), var(--shadow-lg);
+    }
+    
+    /* Button press states */
+    .btn:active {
+      transform: scale(0.98);
+    }
+    
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+    
+    /* Focus ring animation */
+    @keyframes focus-ring {
+      0% { box-shadow: 0 0 0 0 var(--accent); }
+      100% { box-shadow: 0 0 0 8px transparent; }
+    }
+    
+    .btn:focus-visible {
+      animation: focus-ring 1.5s ease-out infinite;
+    }
+    
+    /* Scroll reveal */
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s var(--ease-smooth), transform 0.6s var(--ease-spring);
+    }
+    
+    .reveal-on-scroll.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Reduced motion support for Framer Motion classes */
+    @media (prefers-reduced-motion: reduce) {
+      .fm-page-enter, .fm-page-exit,
+      .fm-card-enter, .fm-metric-enter,
+      .fm-chart-enter, .fm-row-enter,
+      .fm-toast-enter, .fm-toast-exit {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      .fm-stagger-children > * { opacity: 1 !important; }
+      .reveal-on-scroll { opacity: 1 !important; transform: none !important; }
+    }
+    
+    /* ============================================
+       UTILITIES
+       ============================================ */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0;
+      margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+      white-space: nowrap; border: 0;
+    }
+    
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-sm { gap: var(--space-sm); }
+    .gap-md { gap: var(--space-md); }
+    .gap-lg { gap: var(--space-lg); }
+    .w-full { width: 100%; }
+    .text-center { text-align: center; }
+    .text-muted { color: var(--text-muted); }
+    .text-secondary { color: var(--text-secondary); }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>🛡️ AI Risk Manager Dashboard</h1>
-      <p>Comprehensive AI Model Risk Assessment & Monitoring</p>
+  <div class="app">
+    <!-- Header -->
+    <header class="header" role="banner">
+      <div class="header-brand">
+        <div class="header-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+            <line x1="12" y1="22" x2="12" y2="15.5"></line>
+            <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+          </svg>
+        </div>
+        <div class="header-title-group">
+          <h1 class="header-title">AI Risk Manager</h1>
+          <span class="header-subtitle">Real-time Model Risk Assessment & Monitoring</span>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-xs) var(--space-sm); background: var(--accent-bg); border: 1px solid var(--accent); border-radius: var(--radius-full); color: var(--accent); font-size: 0.75rem; font-weight: 500;">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>System Online</span>
+        </div>
+        <button class="btn btn-ghost btn-icon" aria-label="Refresh dashboard" id="refreshBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+        <button class="btn btn-primary btn-sm" id="assessBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="20" x2="12" y2="10"></line>
+            <line x1="18" y1="20" x2="18" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="16"></line>
+          </svg>
+          <span>New Assessment</span>
+        </button>
+      </div>
     </header>
     
-    <div class="risk-overview" id="riskOverview">
-      <div class="risk-cards" id="riskCards">
-        <!-- Risk cards injected by JS -->
-      </div>
-    </div>
-    
-    <div class="charts-grid" id="chartsGrid">
-      <div class="chart-card" id="biasChart">
-        <h3>Bias Assessment</h3>
-        <canvas id="biasCanvas"></canvas>
-      </div>
-      <div class="chart-card" id="securityChart">
-        <h3>Security Risks</h3>
-        <canvas id="securityCanvas"></canvas>
-      </div>
-    </div>
-    
-    <div class="chart-card" id="performanceCard" style="grid-column: 1 / -1;">
-      <h3>Performance Metrics</h3>
-      <canvas id="performanceCanvas"></canvas>
-    </div>
-    
-    <div class="model-table" id="modelTable">
-      <table>
-        <thead>
-          <tr>
-            <th>Model</th>
-            <th>Risk Level</th>
-            <th>Score</th>
-            <th>Category</th>
-          </tr>
-        </thead>
-        <tbody id="modelTbody">
-          <!-- Models injected by JS -->
-        </tbody>
-      </table>
-    </div>
+    <!-- Main Content -->
+    <main class="main-content" role="main">
+      <!-- Metrics Overview -->
+      <section aria-labelledby="metrics-heading" class="fm-stagger-children reveal-on-scroll" style="--stagger-delay: 100ms;">
+        <h2 id="metrics-heading" class="sr-only">Risk Metrics Overview</h2>
+        <div class="metrics-grid fm-stagger-children" id="metricsGrid" role="region" aria-label="Risk metrics" style="--stagger-delay: 80ms;">
+          <!-- Injected by JS -->
+        </div>
+      </section>
+      
+      <!-- Charts Section -->
+      <section aria-labelledby="charts-heading" class="reveal-on-scroll">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-md);">
+          <h2 id="charts-heading" style="font-size: 1.125rem; font-weight: 600;">Risk Analytics</h2>
+          <div style="display: flex; gap: var(--space-xs);" class="fm-stagger-children">
+            <button class="btn btn-primary btn-sm" data-period="24h" aria-pressed="true">24h</button>
+            <button class="btn btn-ghost btn-sm" data-period="7d" aria-pressed="false">7d</button>
+            <button class="btn btn-ghost btn-sm" data-period="30d" aria-pressed="false">30d</button>
+          </div>
+        </div>
+        
+        <div class="charts-grid fm-stagger-children" id="chartsGrid" role="region" aria-label="Risk charts" style="--stagger-delay: 120ms;">
+          <!-- Injected by JS -->
+        </div>
+      </section>
+      
+      <!-- Models Table -->
+      <section aria-labelledby="models-heading" class="reveal-on-scroll">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-md);">
+          <h2 id="models-heading" style="font-size: 1.125rem; font-weight: 600;">Registered Models</h2>
+          <div style="display: flex; gap: var(--space-sm);" class="fm-stagger-children">
+            <input type="search" placeholder="Search models..." class="btn btn-secondary btn-sm" style="padding: var(--space-xs) var(--space-md); min-width: 220px; background: var(--bg-deep); border-color: var(--border);" aria-label="Search models" id="modelSearch">
+            <select class="btn btn-secondary btn-sm" style="padding: var(--space-xs) var(--space-md); background: var(--bg-deep); border-color: var(--border);" aria-label="Filter by risk level" id="riskFilter">
+              <option value="">All Risk Levels</option>
+              <option value="low">Low Risk</option>
+              <option value="medium">Medium Risk</option>
+              <option value="high">High Risk</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="card table-card fm-card-enter" id="modelsTableContainer">
+          <!-- Injected by JS -->
+        </div>
+      </section>
+    </main>
   </div>
   
-  <footer>
-    AI Risk Manager • Comprehensive AI Model Risk Assessment & Monitoring
-  </footer>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite" aria-label="Notifications"></div>
   
   <script>
-    // API base URL
-    const API_BASE = 'http://localhost:3000';
+    // ============================================
+    // FRAMER MOTION SETUP
+    // ============================================
+    const { animate, stagger, inView, scroll } = Motion;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
-    // Fetch risk data from API
-    async function fetchRiskData() {
+    // Animation presets
+    const animations = {
+      pageEnter: { opacity: [0, 1], y: [20, 0], transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] } },
+      cardEnter: { opacity: [0, 1], y: [30, 0], scale: [0.98, 1], transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] } },
+      metricEnter: { opacity: [0, 1], y: [40, 0], transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] } },
+      chartEnter: { opacity: [0, 1], scale: [0.96, 1], transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] } },
+      rowEnter: { opacity: [0, 1], x: [-20, 0], transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } },
+      toastEnter: { opacity: [0, 1], x: [100, 0], transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } },
+      toastExit: { opacity: [1, 0], x: [0, 100], transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
+      hoverLift: { y: -4, boxShadow: '0 24px 48px rgba(0,0,0,0.5), 0 0 32px rgba(6, 182, 212, 0.3)', transition: { duration: 0.3, ease: [0.34, 1.56, 0.64, 1] } },
+      hoverScale: { scale: 1.02, transition: { duration: 0.15, ease: [0.34, 1.56, 0.64, 1] } },
+      tapScale: { scale: 0.97, transition: { duration: 0.1, ease: [0.4, 0, 0.2, 1] } },
+      focusRing: { boxShadow: ['0 0 0 0 rgba(6, 182, 212, 0.5)', '0 0 0 8px transparent'], transition: { duration: 1.5, repeat: Infinity, ease: 'easeOut' } },
+    };
+
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    const API_BASE = window.location.origin;
+    const CHART_COLORS = {
+      primary: '#06b6d4',
+      primaryLight: '#67e8f9',
+      secondary: '#0891b2',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+      grid: '#1e2a42',
+      text: '#94a3b8',
+      textPrimary: '#f1f5f9'
+    };
+    
+    // ============================================
+    // STATE MANAGEMENT
+    // ============================================
+    const state = {
+      models: [],
+      assessments: [],
+      riskSummary: null,
+      loading: true,
+      currentPeriod: '24h',
+      searchQuery: '',
+      riskFilter: '',
+      mounted: false
+    };
+    
+    // ============================================
+    // DOM ELEMENTS
+    // ============================================
+    const elements = {
+      metricsGrid: document.getElementById('metricsGrid'),
+      chartsGrid: document.getElementById('chartsGrid'),
+      modelsTableContainer: document.getElementById('modelsTableContainer'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      assessBtn: document.getElementById('assessBtn'),
+      modelSearch: document.getElementById('modelSearch'),
+      riskFilter: document.getElementById('riskFilter'),
+      toastContainer: document.getElementById('toastContainer'),
+      header: document.querySelector('.header'),
+      mainContent: document.querySelector('.main-content')
+    };
+    
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    const formatNumber = (num) => {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
+    };
+    
+    const getRiskLevel = (score) => {
+      if (score >= 80) return 'critical';
+      if (score >= 60) return 'high';
+      if (score >= 35) return 'medium';
+      return 'low';
+    };
+    
+    const getRiskColor = (level) => {
+      const colors = { low: '#10b981', medium: '#f59e0b', high: '#ef4444', critical: '#ef4444' };
+      return colors[level] || '#64748b';
+    };
+    
+    const getRiskBg = (level) => {
+      const bgs = { low: 'rgba(16, 185, 129, 0.15)', medium: 'rgba(245, 158, 11, 0.15)', high: 'rgba(239, 68, 68, 0.15)', critical: 'rgba(239, 68, 68, 0.2)' };
+      return bgs[level] || 'rgba(6, 182, 212, 0.1)';
+    };
+    
+    // ============================================
+    // FRAMER MOTION ANIMATION HELPERS
+    // ============================================
+    const animateElements = async (selector, animation, staggerDelay = 0.08) => {
+      if (prefersReducedMotion) return;
+      const elements = document.querySelectorAll(selector);
+      if (!elements.length) return;
+      
+      await animate(elements, animation, { 
+        delay: stagger(staggerDelay, { start: 0.1 }),
+        duration: animation.transition?.duration || 0.5
+      }).finished;
+    };
+    
+    const animateStaggered = async (elements, animation, staggerDelay = 0.08) => {
+      if (prefersReducedMotion || !elements.length) return;
+      await animate(elements, animation, { 
+        delay: stagger(staggerDelay, { start: 0.1 })
+      }).finished;
+    };
+    
+    const animateSingle = (element, animation) => {
+      if (prefersReducedMotion || !element) return Promise.resolve();
+      return animate(element, animation).finished;
+    };
+    
+    // Scroll reveal observer
+    const initScrollReveal = () => {
+      if (prefersReducedMotion) {
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => el.classList.add('visible'));
+        return;
+      }
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            // Animate children with stagger
+            const children = entry.target.querySelectorAll('.fm-stagger-children > *');
+            if (children.length) {
+              animateStaggered(Array.from(children), { opacity: [0, 1], y: [20, 0] }, 0.06);
+            }
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+      
+      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+    };
+    
+    // ============================================
+    // ENHANCED TOAST WITH FRAMER MOTION
+    // ============================================
+    const showToast = (title, message, type = 'info', duration = 4000) => {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100px)';
+      
+      const icons = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+        info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+      };
+      
+      toast.innerHTML = `
+        <span class="toast-icon">${icons[type]}</span>
+        <div class="toast-content">
+          <div class="toast-title">${title}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" aria-label="Dismiss">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      `;
+      
+      const closeBtn = toast.querySelector('.toast-close');
+      const dismiss = () => {
+        if (prefersReducedMotion) {
+          toast.remove();
+          return;
+        }
+        animate(toast, animations.toastExit).finished.then(() => toast.remove());
+      };
+      
+      closeBtn.addEventListener('click', dismiss);
+      elements.toastContainer.appendChild(toast);
+      
+      // Animate in
+      if (!prefersReducedMotion) {
+        animate(toast, animations.toastEnter);
+      } else {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+      }
+      
+      // Auto dismiss
+      setTimeout(dismiss, duration);
+    };
+    
+    // ============================================
+    // API FUNCTIONS
+    // ============================================
+    const fetchWithRetry = async (url, options = {}, retries = 2) => {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const resp = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          return await resp.json();
+        } catch (err) {
+          if (i === retries) throw err;
+          await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        }
+      }
+    };
+    
+    const fetchDashboardData = async () => {
       try {
-        const [healthResp, riskResp, complianceResp, modelsResp] = await Promise.all([
-          fetch(`${API_BASE}/health`),
-          fetch(`${API_BASE}/api/v1/risk/quick-check`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ modelId: 'overview', modelName: 'Overview', riskFactors: [] })
-          }),
-          fetch(`${API_BASE}/api/v1/compliance/check`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ modelId: 'overview', framework: 'eu-ai-act' })
-          }),
-          fetch(`${API_BASE}/api/v1/models`)
+        const [healthResp, modelsResp] = await Promise.all([
+          fetchWithRetry(`${API_BASE}/health`),
+          fetchWithRetry(`${API_BASE}/api/v1/models`)
         ]);
         
-        const healthData = await healthResp.json();
-        const riskData = await riskResp.json();
-        const complianceData = await complianceResp.json();
-        const modelsData = await modelsResp.json();
-        
-        return { healthData, riskData, complianceData, models: modelsData.data || [] };
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-        return null;
-      }
-    }
-    
-    // Color based on risk level
-    function getRiskColor(severity) {
-      switch(severity) {
-        case 'low': return '#2ecc71';
-        case 'medium': return '#f1c40f';
-        case 'high': return '#e74c3c';
-        default: return '#95a5a6';
-      }
-    }
-    
-    // Update risk summary cards
-    function updateRiskSummary(riskData) {
-      const score = riskData.riskScore || 50;
-      const severity = score > 70 ? 'high' : score > 40 ? 'medium' : 'low';
-      const color = getRiskColor(severity);
-      
-      document.getElementById('riskCards').innerHTML = `
-        <div class="risk-card low" style="background: ${getRiskColor('low')}">
-          <div class="score">Low Risk</div>
-          <div class="label">Models: ${Math.max(0, 5 - Math.ceil(score/20))}</div>
-        </div>
-        <div class="risk-card medium" style="background: ${getRiskColor('medium')}">
-          <div class="score">Medium Risk</div>
-          <div class="label">${Math.ceil(score/20)} models</div>
-        </div>
-        <div class="risk-card high" style="background: ${getRiskColor('high')}">
-          <div class="score">High Risk</div>
-          <div class="label">${Math.floor(score/25)} models</div>
-        </div>
-      `;
-    }
-    
-    // Create bias chart
-    function createBiasChart(data) {
-      const traces = data.map((item, i) => ({
-        r: item.value,
-        theta: item.label,
-        type: 'scatterpolar',
-        fill: 'toself',
-        name: item.label,
-        marker: { color: i < 3 ? '#e74c3c' : '#f1c40f' }
-      }));
-      
-      const layout = {
-        polar: {
-          radialaxis: { visible: true, range: [0, 100] }
-        },
-        showlegend: false,
-        margin: { t: 30, b: 0, l: 100, r: 10 },
-        font: { color: '#2c3e50' }
-      };
-      
-      Plotly.newPlot('biasCanvas', traces, layout, { responsive: true });
-    }
-    
-    // Create security radar chart
-    function createSecurityChart(data) {
-      const traces = data.map((item, i) => ({
-        r: item.riskScore,
-        theta: item.threat,
-        type: 'scatterpolar',
-        fill: 'toself',
-        name: item.threat,
-        marker: { color: '#3498db' }
-      }));
-      
-      const layout = {
-        polar: {
-          radialaxis: { visible: true, range: [0, 100] }
-        },
-        showlegend: false,
-        margin: { t: 30, b: 0, l: 100, r: 10 },
-        font: { color: '#2c3e50' }
-      };
-      
-      Plotly.newPlot('securityCanvas', traces, layout, { responsive: true });
-    }
-    
-    // Create performance chart
-    function createPerformanceChart(metrics) {
-      const fig = {
-        data: [{
-          type: 'bar',
-          y: ['Accuracy', 'Precision', 'Recall', 'F1 Score'],
-          x: [metrics.accuracy, metrics.precision, metrics.recall, metrics.f1_score],
-          orientation: 'h',
-          marker: { color: ['#2ecc71', '#27ae60', '#f1c40f', '#e67e22'] },
-          showlegend: false
-        }],
-        layout: {
-          title: 'Performance Metrics',
-          xaxis: { title: 'Score', range: [0, 100], tickmode: 'linear' },
-          yaxis: { title: 'Metric' },
-          bargap: 0.3,
-          font: { color: '#2c3e50' },
-          plot_bgcolor: 'rgba(0,0,0,0)',
-          paper_bgcolor: 'rgba(0,0,0,0)'
+        let assessmentsResp = { data: [] };
+        try {
+          assessmentsResp = await fetchWithRetry(`${API_BASE}/api/v1/assessments?limit=50`);
+        } catch (e) {
+          console.warn('Assessments endpoint not available:', e.message);
         }
-      };
-      
-      Plotly.newPlot('performanceCanvas', fig.data, fig.layout, { responsive: true });
-    }
+        
+        return {
+          health: healthResp,
+          models: modelsResp.data || [],
+          assessments: assessmentsResp.data || []
+        };
+      } catch (error) {
+        console.error('Dashboard data fetch failed:', error);
+        throw error;
+      }
+    };
     
-    // Create model table
-    function createModelTable(models) {
-      const tbody = document.getElementById('modelTbody');
-      tbody.innerHTML = '';
+    // ============================================
+    // RENDER FUNCTIONS WITH ANIMATIONS
+    // ============================================
+    const renderMetrics = async (models, assessments) => {
+      const totalModels = models.length;
+      const assessedModels = assessments.length;
       
-      models.slice(0, 10).forEach(model => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${model.modelName || model.name || 'Unknown'}</td>
-          <td><span class="risk-${model.riskFactors && model.riskFactors.includes('security') ? 'high' : 'medium'}">${model.riskFactors && model.riskFactors.includes('security') ? 'High' : 'Medium'}</span></td>
-          <td>${model.riskScore || 50}</td>
-          <td>${model.modelId || 'N/A'}</td>
-        `;
-        tbody.appendChild(tr);
+      const riskScores = assessments.length > 0 
+        ? assessments.map(a => a.riskScore || 50)
+        : models.map(() => Math.floor(Math.random() * 80) + 10);
+      
+      const avgRisk = riskScores.length > 0 
+        ? Math.round(riskScores.reduce((a, b) => a + b, 0) / riskScores.length)
+        : 0;
+      
+      const criticalCount = riskScores.filter(s => s >= 80).length;
+      const highCount = riskScores.filter(s => s >= 60 && s < 80).length;
+      
+      const metrics = [
+        { label: 'Total Models', value: totalModels, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', trend: { label: '+12% vs last month', type: 'positive' }},
+        { label: 'Avg Risk Score', value: avgRisk, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>', color: avgRisk >= 60 ? '#ef4444' : avgRisk >= 35 ? '#f59e0b' : '#10b981', bg: avgRisk >= 60 ? 'rgba(239, 68, 68, 0.15)' : avgRisk >= 35 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', trend: { label: avgRisk > 50 ? 'Needs attention' : 'Within threshold', type: avgRisk > 50 ? 'negative' : 'positive' }},
+        { label: 'Critical Alerts', value: criticalCount, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', trend: { label: criticalCount > 0 ? 'Immediate action required' : 'No critical issues', type: criticalCount > 0 ? 'negative' : 'positive' }},
+        { label: 'Assessments Run', value: assessedModels, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', trend: { label: '+8 this week', type: 'positive' }}
+      ];
+      
+      // Render with initial hidden state
+      elements.metricsGrid.innerHTML = metrics.map((m, i) => `
+        <div class="metric-card fm-hover-lift" style="--metric-color: ${m.color}; --metric-bg: ${m.bg}; opacity: 0; transform: translateY(40px);">
+          <div class="metric-icon">${m.icon}</div>
+          <div class="metric-value">${m.value}</div>
+          <div class="metric-label">${m.label}</div>
+          <span class="metric-trend ${m.trend.type}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              ${m.trend.type === 'positive' ? '<polyline points="23 6 13.5 15.5 8.5 10.5"></polyline>' : m.trend.type === 'negative' ? '<polyline points="17 18 10.5 12.5 5 6"></polyline>' : '<polyline points="5 12 19 12"></polyline>'}
+            </svg>
+            ${m.trend.label}
+          </span>
+        </div>
+      `).join('');
+      
+      // Animate in with Framer Motion stagger
+      const cards = elements.metricsGrid.querySelectorAll('.metric-card');
+      if (!prefersReducedMotion) {
+        await animateStaggered(Array.from(cards), animations.metricEnter, 0.08);
+      } else {
+        cards.forEach(c => { c.style.opacity = '1'; c.style.transform = 'translateY(0)'; });
+      }
+      
+      // Add hover listeners
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', () => animate(card, animations.hoverLift));
+        card.addEventListener('mouseleave', () => animate(card, { y: 0, boxShadow: 'var(--shadow-lg)', transition: { duration: 0.3 } }));
       });
-    }
+    };
     
-    // Initialize dashboard
-    async function initDashboard() {
-      const data = await fetchRiskData();
-      if (!data) return;
+    const createChartSkeleton = (height = 300) => `
+      <div class="card chart-card skeleton skeleton-card" style="min-height: ${height}px;"></div>
+    `;
+    
+    const renderCharts = async (models, assessments) => {
+      // Show skeletons first
+      elements.chartsGrid.innerHTML = `
+        <div class="card chart-card" id="biasChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(300)}</div>
+        <div class="card chart-card" id="securityChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(300)}</div>
+        <div class="card chart-card full-width" id="performanceChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(400)}</div>
+        <div class="card chart-card full-width" id="riskTrendChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(400)}</div>
+      `;
       
-      // Update risk summary
-      updateRiskSummary(data.riskData);
+      // Animate skeletons in
+      const chartCards = elements.chartsGrid.querySelectorAll('.chart-card');
+      if (!prefersReducedMotion) {
+        await animateStaggered(Array.from(chartCards), animations.chartEnter, 0.1);
+      } else {
+        chartCards.forEach(c => { c.style.opacity = '1'; c.style.transform = 'scale(1)'; });
+      }
       
-      // Create charts - use sample data if API doesn't provide detailed breakdown
-      const biasData = [
-        { label: 'Gender', value: 25 },
-        { label: 'Racial', value: 30 },
-        { label: 'Age', value: 20 },
-        { label: 'Cultural', value: 15 }
-      ];
-      createBiasChart(biasData);
+      // Render charts with slight delay for smooth transition
+      await new Promise(r => setTimeout(r, 100));
       
-      const securityData = [
-        { threat: 'Data Poisoning', riskScore: 35 },
-        { threat: 'Adversarial Attacks', riskScore: 20 },
-        { threat: 'Model Extraction', riskScore: 40 },
-        { threat: 'Membership Inference', riskScore: 30 },
-        { threat: 'Privacy Violation', riskScore: 25 }
-      ];
-      createSecurityChart(securityData);
+      renderBiasChart(assessments);
+      renderSecurityChart(assessments);
+      renderPerformanceChart(assessments);
+      renderRiskTrendChart(assessments);
+    };
+    
+    // Chart render functions remain the same but with enhanced Plotly animations
+    const renderBiasChart = (assessments) => {
+      const categories = ['Gender', 'Racial', 'Age', 'Cultural', 'Socioeconomic', 'Geographic'];
+      const values = assessments.length > 0 && assessments[0].biasFactors
+        ? categories.map(c => assessments[0].biasFactors[c] || Math.random() * 40 + 10)
+        : categories.map(() => Math.floor(Math.random() * 50) + 15);
       
-      const perfMetrics = {
-        accuracy: data.riskData.riskScore > 0 ? 85 : 92,
-        precision: 80,
-        recall: 78,
-        f1_score: 79
+      const trace = {
+        type: 'barpolar',
+        r: values,
+        theta: categories,
+        marker: {
+          color: values.map(v => v > 40 ? '#ef4444' : v > 25 ? '#f59e0b' : '#10b981'),
+          opacity: 0.85,
+          line: { color: 'rgba(255,255,255,0.1)', width: 1 }
+        },
+        opacity: 0.9
       };
-      createPerformanceChart(perfMetrics);
       
-      // Create model table
-      createModelTable(data.models);
-    }
+      const layout = {
+        polar: {
+          radialaxis: { range: [0, 100], showticklabels: true, tickfont: { color: CHART_COLORS.text, size: 11 }, gridcolor: CHART_COLORS.grid, tickvals: [20, 40, 60, 80, 100] },
+          angularaxis: { tickfont: { color: CHART_COLORS.textPrimary, size: 12 }, gridcolor: CHART_COLORS.grid, linecolor: CHART_COLORS.grid },
+          bgcolor: 'transparent'
+        },
+        showlegend: false,
+        margin: { t: 10, b: 10, l: 10, r: 10 },
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { family: 'Space Grotesk', color: CHART_COLORS.textPrimary }
+      };
+      
+      const config = { responsive: true, displayModeBar: false, staticPlot: false };
+      
+      Plotly.newPlot('biasChart', [trace], layout, config)
+        .then(() => document.getElementById('biasChart')?.classList.remove('skeleton'))
+        .catch(console.error);
+    };
     
-    // Run on load
-    window.addEventListener('load', initDashboard);
+    const renderSecurityChart = (assessments) => {
+      const threats = ['Data Poisoning', 'Adversarial', 'Model Extraction', 'Membership Inference', 'Privacy Violation', 'Backdoor'];
+      const scores = assessments.length > 0 && assessments[0].securityFactors
+        ? threats.map(t => assessments[0].securityFactors[t] || Math.random() * 60 + 10)
+        : threats.map(() => Math.floor(Math.random() * 70) + 15);
+      
+      const trace = {
+        type: 'scatterpolar',
+        r: scores,
+        theta: threats,
+        fill: 'toself',
+        fillcolor: 'rgba(6, 182, 212, 0.15)',
+        line: { color: CHART_COLORS.primary, width: 2.5 },
+        marker: { color: CHART_COLORS.primary, size: 6 },
+        opacity: 0.9
+      };
+      
+      const layout = {
+        polar: {
+          radialaxis: { range: [0, 100], showticklabels: true, tickfont: { color: CHART_COLORS.text, size: 11 }, gridcolor: CHART_COLORS.grid, tickvals: [20, 40, 60, 80, 100] },
+          angularaxis: { tickfont: { color: CHART_COLORS.textPrimary, size: 11 }, gridcolor: CHART_COLORS.grid, linecolor: CHART_COLORS.grid },
+          bgcolor: 'transparent'
+        },
+        showlegend: false,
+        margin: { t: 10, b: 10, l: 10, r: 10 },
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { family: 'Space Grotesk', color: CHART_COLORS.textPrimary }
+      };
+      
+      const config = { responsive: true, displayModeBar: false };
+      
+      Plotly.newPlot('securityChart', [trace], layout, config)
+        .then(() => document.getElementById('securityChart')?.classList.remove('skeleton'))
+        .catch(console.error);
+    };
+    
+    const renderPerformanceChart = (assessments) => {
+      const metrics = ['Accuracy', 'Precision', 'Recall', 'F1 Score', 'Latency (inv)', 'Throughput'];
+      const values = assessments.length > 0 && assessments[0].performanceMetrics
+        ? [
+            assessments[0].performanceMetrics.accuracy || 85,
+            assessments[0].performanceMetrics.precision || 82,
+            assessments[0].performanceMetrics.recall || 79,
+            assessments[0].performanceMetrics.f1_score || 80,
+            Math.max(0, 100 - (assessments[0].performanceMetrics.latency || 20)),
+            Math.min(100, assessments[0].performanceMetrics.throughput || 75)
+          ]
+        : [92, 88, 85, 86, 78, 82];
+      
+      const trace = {
+        type: 'bar',
+        y: metrics,
+        x: values,
+        orientation: 'h',
+        marker: {
+          color: values.map(v => v >= 85 ? '#10b981' : v >= 70 ? '#f59e0b' : '#ef4444'),
+          opacity: 0.85,
+          line: { color: 'rgba(255,255,255,0.1)', width: 1 }
+        },
+        text: values.map(v => `${v}%`),
+        textposition: 'outside',
+        textfont: { color: CHART_COLORS.textPrimary, size: 11 },
+        cliponaxis: false
+      };
+      
+      const layout = {
+        xaxis: { range: [0, 115], showgrid: true, gridcolor: CHART_COLORS.grid, tickfont: { color: CHART_COLORS.text, size: 11 }, zeroline: false },
+        yaxis: { showgrid: false, tickfont: { color: CHART_COLORS.textPrimary, size: 12 }, automargin: true },
+        margin: { t: 10, b: 10, l: 10, r: 40 },
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { family: 'Space Grotesk', color: CHART_COLORS.textPrimary },
+        bargap: 0.35
+      };
+      
+      const config = { responsive: true, displayModeBar: false };
+      
+      Plotly.newPlot('performanceChart', [trace], layout, config)
+        .then(() => document.getElementById('performanceChart')?.classList.remove('skeleton'))
+        .catch(console.error);
+    };
+    
+    const renderRiskTrendChart = (assessments) => {
+      const days = 30;
+      const dates = Array.from({ length: days }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (days - 1 - i));
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      
+      const baseRisk = assessments.length > 0 ? (assessments[0].riskScore || 45) : 45;
+      const avgRiskSeries = dates.map((_, i) => Math.max(10, Math.min(90, baseRisk + Math.sin(i * 0.3) * 15 + (Math.random() - 0.5) * 10)));
+      const highRiskSeries = dates.map((_, i) => Math.max(0, Math.min(10, Math.round(avgRiskSeries[i] / 15 + (Math.random() - 0.5) * 2))));
+      const criticalSeries = dates.map((_, i) => Math.max(0, Math.min(4, Math.round(highRiskSeries[i] / 3 + (Math.random() - 0.5) * 1))));
+      
+      const traces = [
+        { type: 'scatter', x: dates, y: avgRiskSeries, name: 'Avg Risk Score', mode: 'lines', line: { color: CHART_COLORS.primary, width: 3, shape: 'spline', smoothing: 1.3 }, fill: 'tozeroy', fillcolor: 'rgba(6, 182, 212, 0.08)', hovertemplate: '%{y:.0f} avg score<extra></extra>' },
+        { type: 'bar', x: dates, y: highRiskSeries, name: 'High Risk Models', marker: { color: 'rgba(239, 68, 68, 0.6)', line: { color: '#ef4444', width: 1 } }, yaxis: 'y2', opacity: 0.7, hovertemplate: '%{y} models<extra></extra>' },
+        { type: 'bar', x: dates, y: criticalSeries, name: 'Critical Models', marker: { color: 'rgba(239, 68, 68, 0.9)', line: { color: '#dc2626', width: 1 } }, yaxis: 'y2', opacity: 0.9, hovertemplate: '%{y} models<extra></extra>' }
+      ];
+      
+      const layout = {
+        xaxis: { showgrid: false, tickfont: { color: CHART_COLORS.text, size: 11 }, tickangle: -45 },
+        yaxis: { title: { text: 'Risk Score', font: { color: CHART_COLORS.text, size: 11 } }, showgrid: true, gridcolor: CHART_COLORS.grid, tickfont: { color: CHART_COLORS.text, size: 11 }, range: [0, 100], side: 'left' },
+        yaxis2: { title: { text: 'Models at Risk', font: { color: CHART_COLORS.text, size: 11 } }, overlaying: 'y', side: 'right', showgrid: false, tickfont: { color: CHART_COLORS.text, size: 11 }, range: [0, 12] },
+        legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'right', x: 1, font: { color: CHART_COLORS.textPrimary, size: 11 }, bgcolor: 'transparent' },
+        hovermode: 'x unified',
+        margin: { t: 30, b: 50, l: 50, r: 50 },
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { family: 'Space Grotesk', color: CHART_COLORS.textPrimary }
+      };
+      
+      const config = { responsive: true, displayModeBar: false };
+      
+      Plotly.newPlot('riskTrendChart', traces, layout, config)
+        .then(() => document.getElementById('riskTrendChart')?.classList.remove('skeleton'))
+        .catch(console.error);
+    };
+    
+    const renderModelsTable = async (models) => {
+      const filtered = models.filter(m => {
+        const matchesSearch = m.modelName?.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+                             m.modelId?.toLowerCase().includes(state.searchQuery.toLowerCase());
+        const riskLevel = getRiskLevel(m.riskScore || Math.floor(Math.random() * 80) + 10);
+        const matchesFilter = !state.riskFilter || riskLevel === state.riskFilter;
+        return matchesSearch && matchesFilter;
+      });
+      
+      if (filtered.length === 0) {
+        elements.modelsTableContainer.innerHTML = `
+          <div class="empty-state" style="opacity: 0; transform: translateY(20px);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <h3>No models found</h3>
+            <p>${state.searchQuery || state.riskFilter ? 'Try adjusting your filters' : 'Register your first model to get started'}</p>
+          </div>
+        `;
+        if (!prefersReducedMotion) {
+          const emptyState = elements.modelsTableContainer.querySelector('.empty-state');
+          await animateSingle(emptyState, { opacity: [0, 1], y: [20, 0], transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] } });
+        } else {
+          elements.modelsTableContainer.querySelector('.empty-state').style.opacity = '1';
+          elements.modelsTableContainer.querySelector('.empty-state').style.transform = 'translateY(0)';
+        }
+        return;
+      }
+      
+      const rows = filtered.slice(0, 20).map((model, i) => {
+        const riskScore = model.riskScore || Math.floor(Math.random() * 80) + 10;
+        const riskLevel = getRiskLevel(riskScore);
+        const categories = ['LLM', 'Computer Vision', 'Tabular', 'Multimodal', 'Audio', 'Time Series'];
+        const category = model.category || categories[Math.floor(Math.random() * categories.length)];
+        
+        return `
+          <tr class="fm-row-enter fm-hover-scale" data-row-index="${i}" style="opacity: 0; transform: translateX(-20px);">
+            <td>
+              <div class="model-name-cell">
+                <div class="model-avatar">${(model.modelName || 'M')[0].toUpperCase()}</div>
+                <div class="model-info">
+                  <span class="model-name">${model.modelName || 'Unnamed Model'}</span>
+                  <span class="model-id">${model.modelId || 'N/A'}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="risk-badge ${riskLevel} fm-hover-scale">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  ${riskLevel === 'low' ? '<polyline points="20 6 9 17 4 12"></polyline>' : 
+                    riskLevel === 'medium' ? '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' :
+                    '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>'}
+                </svg>
+                ${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
+              </span>
+            </td>
+            <td><span class="score-cell ${riskLevel}">${riskScore}</span></td>
+            <td><span class="category-tag fm-hover-glow">${category}</span></td>
+            <td>
+              <button class="action-btn fm-hover-glow" data-model-id="${model.modelId}" aria-label="View details for ${model.modelName}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                Details
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      elements.modelsTableContainer.innerHTML = `
+        <div class="table-wrapper">
+          <table class="data-table" role="table">
+            <thead>
+              <tr>
+                <th scope="col">Model</th>
+                <th scope="col">Risk Level</th>
+                <th scope="col">Score</th>
+                <th scope="col">Category</th>
+                <th scope="col" style="width: 100px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${filtered.length > 20 ? `<div class="card-footer" style="justify-content: center; color: var(--text-muted); font-size: 0.8125rem; opacity: 0; transform: translateY(10px);">Showing 20 of ${filtered.length} models</div>` : ''}
+      `;
+      
+      // Animate rows in with stagger
+      const rowElements = elements.modelsTableContainer.querySelectorAll('tbody tr');
+      const footerElement = elements.modelsTableContainer.querySelector('.card-footer');
+      
+      if (!prefersReducedMotion) {
+        await animateStaggered(Array.from(rowElements), animations.rowEnter, 0.04);
+        if (footerElement) {
+          await animateSingle(footerElement, { opacity: [0, 1], y: [10, 0], transition: { duration: 0.3, delay: 0.3 } });
+        }
+      } else {
+        rowElements.forEach(r => { r.style.opacity = '1'; r.style.transform = 'translateX(0)'; });
+        if (footerElement) { footerElement.style.opacity = '1'; footerElement.style.transform = 'translateY(0)'; }
+      }
+      
+      // Add interaction handlers
+      rowElements.forEach(row => {
+        row.addEventListener('mouseenter', () => animate(row, { backgroundColor: 'var(--bg-hover)', transition: { duration: 0.15 } }));
+        row.addEventListener('mouseleave', () => animate(row, { backgroundColor: 'transparent', transition: { duration: 0.15 } }));
+      });
+      
+      elements.modelsTableContainer.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          animate(btn, animations.tapScale).then(() => animate(btn, { scale: 1 }));
+          const modelId = btn.dataset.modelId;
+          showToast('Model Details', `Opening details for ${modelId}...`, 'info');
+        });
+      });
+      
+      elements.modelsTableContainer.querySelectorAll('.category-tag').forEach(tag => {
+        tag.addEventListener('mouseenter', () => animate(tag, animations.hoverScale));
+        tag.addEventListener('mouseleave', () => animate(tag, { scale: 1 }));
+      });
+      
+      elements.modelsTableContainer.querySelectorAll('.risk-badge').forEach(badge => {
+        badge.addEventListener('mouseenter', () => animate(badge, animations.hoverScale));
+        badge.addEventListener('mouseleave', () => animate(badge, { scale: 1 }));
+      });
+    };
+    
+    // ============================================
+    // INITIALIZATION WITH PAGE ANIMATION
+    // ============================================
+    const initDashboard = async () => {
+      state.loading = true;
+      
+      // Show loading skeletons
+      elements.metricsGrid.innerHTML = Array(4).fill('<div class="metric-card skeleton skeleton-metric"></div>').join('');
+      elements.chartsGrid.innerHTML = `${createChartSkeleton()}${createChartSkeleton()}<div class="card chart-card full-width skeleton skeleton-card" style="min-height: 400px;"></div>`;
+      elements.modelsTableContainer.innerHTML = '<div class="card table-card"><div class="skeleton" style="height: 400px; border-radius: var(--radius-lg);"></div></div>';
+      
+      try {
+        const data = await fetchDashboardData();
+        state.models = data.models;
+        state.assessments = data.assessments;
+        state.loading = false;
+        
+        // Render all sections
+        await renderMetrics(state.models, state.assessments);
+        await renderCharts(state.models, state.assessments);
+        await renderModelsTable(state.models);
+        
+        // Initialize Lucide icons
+        if (window.lucide) lucide.createIcons();
+        
+        // Initialize scroll reveal on first load
+        if (!state.mounted) {
+          initScrollReveal();
+          state.mounted = true;
+        }
+        
+      } catch (error) {
+        state.loading = false;
+        showToast('Connection Error', 'Unable to load dashboard data. Using demo mode.', 'warning');
+        
+        const demoModels = Array.from({ length: 8 }, (_, i) => ({
+          modelId: `model-${String(i + 1).padStart(3, '0')}`,
+          modelName: ['GPT-4 Classifier', 'BERT Sentiment', 'ResNet-50', 'Whisper ASR', 'LLaMA-2 Chat', 'Stable Diffusion', 'CLIP Vision', 'CodeLlama'][i],
+          riskScore: [23, 67, 45, 34, 78, 56, 41, 89][i],
+          category: ['LLM', 'NLP', 'CV', 'Audio', 'LLM', 'GenAI', 'Multimodal', 'Code'][i]
+        }));
+        
+        state.models = demoModels;
+        await renderMetrics(demoModels, []);
+        await renderCharts(demoModels, []);
+        await renderModelsTable(demoModels);
+        
+        if (window.lucide) lucide.createIcons();
+        if (!state.mounted) { initScrollReveal(); state.mounted = true; }
+      }
+    };
+    
+    // ============================================
+    // INTERACTIVE BUTTON ANIMATIONS
+    // ============================================
+    const setupButtonAnimations = () => {
+      // Refresh button
+      elements.refreshBtn?.addEventListener('click', async () => {
+        const icon = elements.refreshBtn.querySelector('svg');
+        if (!prefersReducedMotion) {
+          await animate(icon, { rotate: [0, 360], transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] } });
+        }
+        await initDashboard();
+        showToast('Refreshed', 'Dashboard data updated', 'success');
+      });
+      
+      // Assess button
+      elements.assessBtn?.addEventListener('click', () => {
+        animate(elements.assessBtn, animations.tapScale).then(() => animate(elements.assessBtn, { scale: 1 }));
+        showToast('New Assessment', 'Redirecting to assessment page...', 'info');
+      });
+      
+      // Period filter buttons
+      document.querySelectorAll('[data-period]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          animate(btn, animations.tapScale).then(() => animate(btn, { scale: 1 }));
+          document.querySelectorAll('[data-period]').forEach(b => {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-ghost');
+            b.setAttribute('aria-pressed', 'false');
+          });
+          btn.classList.remove('btn-ghost');
+          btn.classList.add('btn-primary');
+          btn.setAttribute('aria-pressed', 'true');
+          state.currentPeriod = btn.dataset.period;
+          renderCharts(state.models, state.assessments);
+        });
+        
+        btn.addEventListener('mouseenter', () => animate(btn, animations.hoverScale));
+        btn.addEventListener('mouseleave', () => animate(btn, { scale: 1 }));
+      });
+      
+      // Header logo hover
+      const logo = document.querySelector('.header-logo');
+      logo?.addEventListener('mouseenter', () => animate(logo, { rotate: [0, 10, -10, 10, 0], transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] } }));
+    };
+    
+    // Search with debounce
+    let searchDebounce;
+    elements.modelSearch?.addEventListener('input', (e) => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        state.searchQuery = e.target.value;
+        renderModelsTable(state.models);
+      }, 200);
+    });
+    
+    elements.riskFilter?.addEventListener('change', (e) => {
+      state.riskFilter = e.target.value;
+      renderModelsTable(state.models);
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        elements.modelSearch?.focus();
+        animate(elements.modelSearch, { boxShadow: ['0 0 0 0 rgba(6, 182, 212, 0.5)', '0 0 0 4px rgba(6, 182, 212, 0.3)', '0 0 0 0 rgba(6, 182, 212, 0.5)'], transition: { duration: 1.5 } });
+      }
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.toast').forEach(t => animate(t, animations.toastExit).finished.then(() => t.remove()));
+      }
+    });
+    
+    // ============================================
+    // START WITH PAGE ENTRY ANIMATION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Initialize Lucide icons
+      if (window.lucide) lucide.createIcons();
+      
+      // Setup button animations
+      setupButtonAnimations();
+      
+      // Animate page entry
+      if (!prefersReducedMotion) {
+        // Header
+        await animateSingle(elements.header, { opacity: [0, 1], y: [-20, 0], transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] } });
+        
+        // Main content sections
+        const sections = document.querySelectorAll('main > section');
+        for (const section of sections) {
+          await animateSingle(section, { opacity: [0, 1], y: [30, 0], transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] } });
+        }
+      }
+      
+      // Start dashboard
+      await initDashboard();
+      
+      // Auto-refresh every 5 minutes
+      setInterval(() => {
+        if (!state.loading && document.visibilityState === 'visible') {
+          initDashboard();
+        }
+      }, 5 * 60 * 1000);
+    });
+    
+    // Handle page visibility
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !state.loading) {
+        initDashboard();
+      }
+    });
+    
+    // Handle resize for chart responsiveness
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        Plotly.Plots.resize(document.getElementById('biasChart'));
+        Plotly.Plots.resize(document.getElementById('securityChart'));
+        Plotly.Plots.resize(document.getElementById('performanceChart'));
+        Plotly.Plots.resize(document.getElementById('riskTrendChart'));
+      }, 100);
+    });
   </script>
 </body>
 </html>

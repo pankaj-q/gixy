@@ -113,7 +113,7 @@ export default class PerformanceMetrics {
     if (metrics.latency > 200) {
       recommendations.push('High latency - optimize model inference or hardware acceleration');
     }
-    if (metrics.throughput < 300) {
+    if (metrics.throughput < 70) {
       recommendations.push('Low throughput - batch processing or model optimization needed');
     }
 
