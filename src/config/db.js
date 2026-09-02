@@ -6,10 +6,10 @@ let isConnecting = false;
 // Allow overriding the URI via environment variable (useful for tests)
 // This works across Jest's separate processes for globalSetup
 function getMongoUri() {
-  return process.env.MONGODB_URI_TEST_OVERRIDE || process.env.MONGODB_URI;
+  return process.env.MONGODB_URI_TEST_OVERRIDE || process.env.MONGODB_URI || 'mongodb://localhost:27017/gixy';
 }
 
-export async function connectDB(maxRetries = 5, retryDelay = 2000) {
+export async function connectDB(maxRetries = 3, retryDelay = 1000) {
   // If already connected or connecting, return existing connection
   if (dbConnection && mongoose.connection.readyState === 1) {
     return dbConnection;

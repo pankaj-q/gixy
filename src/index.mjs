@@ -814,13 +814,18 @@ async function startServer() {
   if (serverStarted) return server;
   
   if (!isTestMode) {
-    // For direct execution, connect DB and start server
-    await initializeDatabase();
+    // For direct execution, DON'T wait for DB - start server immediately
+    // DB connection happens in background
     server = app.listen(PORT, () => {
       logger.info(`AI Risk Manager running on port ${PORT}`, { 
         environment: config.env,
         dashboard: `http://localhost:${PORT}/dashboard`
       });
+    });
+    
+    // Initialize database in background (non-blocking)
+    initializeDatabase().catch(err => {
+      logger.warn('Background database connection failed', { error: err.message });
     });
   } else {
     // For testing, DON'T connect to DB immediately - only when needed
@@ -839,26 +844,19 @@ if (!isTestMode) {
 export { app, server, initializeDatabase };
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
+async function gracefulShutdown(signal) {
   try {
-    logger.info('SIGTERM received, shutting down gracefully');
+    logger.info(`${signal} received, shutting down gracefully`);
     await disconnectDB();
-    server.close();
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
     process.exit(0);
   } catch (err) {
     logger.error('Error during shutdown', { error: err.message });
     process.exit(1);
   }
-});
+}
 
-process.on('SIGINT', async () => {
-  try {
-    logger.info('SIGINT received, shutting down gracefully');
-    await disconnectDB();
-    server.close();
-    process.exit(0);
-  } catch (err) {
-    logger.error('Error during shutdown', { error: err.message });
-    process.exit(1);
-  }
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
