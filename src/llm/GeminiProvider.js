@@ -9,7 +9,7 @@ export class GeminiProvider extends LLMProvider {
     super(config);
     this.apiKey = config.apiKey || process.env.GEMINI_API_KEY;
     this.baseUrl = config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
-    this.defaultModel = config.defaultModel || 'gemini-1.5-flash';
+    this.defaultModel = config.defaultModel || 'gemini-3.6-flash';
   }
 
   getName() {
@@ -18,10 +18,13 @@ export class GeminiProvider extends LLMProvider {
 
   getAvailableModels() {
     return [
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-2.0-flash',
       'gemini-1.5-flash',
-      'gemini-1.5-flash-8b',
       'gemini-1.5-pro',
-      'gemini-1.0-pro',
     ];
   }
 
@@ -266,10 +269,13 @@ export class GeminiProvider extends LLMProvider {
   calculateCost(usage, model = this.defaultModel) {
     // Gemini pricing (as of 2024) per 1M tokens
     const pricing = {
+      'gemini-3.6-flash': { input: 0.075, output: 0.30 },
+      'gemini-3.5-flash': { input: 0.075, output: 0.30 },
+      'gemini-2.5-flash': { input: 0.075, output: 0.30 },
+      'gemini-2.5-pro': { input: 3.50, output: 10.50 },
+      'gemini-2.0-flash': { input: 0.075, output: 0.30 },
       'gemini-1.5-flash': { input: 0.075, output: 0.30 },
-      'gemini-1.5-flash-8b': { input: 0.0375, output: 0.15 },
       'gemini-1.5-pro': { input: 3.50, output: 10.50 },
-      'gemini-1.0-pro': { input: 0.50, output: 1.50 },
     };
 
     const modelPricing = pricing[model] || pricing['gemini-1.5-flash'];

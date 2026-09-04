@@ -26,23 +26,23 @@
        ============================================ */
     :root {
       /* 3 Core Colors */
-      --bg-deep: #0a0f1a;        /* Deep navy background */
-      --bg-elevated: #151c2e;    /* Elevated surfaces/cards */
+      --bg-deep: #08111b;        /* Deep navy background - slightly darker for contrast */
+      --bg-elevated: #111a2c;    /* Elevated surfaces/cards - lighter for contrast */
       --accent: #06b6d4;         /* Cyan-500 - single brand color */
       
-      /* Derived (shades/tints of the 3 colors) */
-      --bg-hover: #1a253a;
-      --border: #1e2a42;
-      --border-bright: #2a3a56;
+      /* Derived (shades/tints of the 3 colors) - IMPROVED CONTRAST */
+      --bg-hover: #18233a;
+      --border: #253552;         /* Brighter borders for visibility */
+      --border-bright: #3a4f7a;  /* Even brighter for focus states */
       
-      --text-primary: #f1f5f9;    /* slate-100 */
-      --text-secondary: #94a3b8;  /* slate-400 */
-      --text-muted: #64748b;      /* slate-500 */
+      --text-primary: #f8fafc;    /* slate-50 - brighter white */
+      --text-secondary: #cbd5e1;  /* slate-300 - much more readable */
+      --text-muted: #94a3b8;      /* slate-400 - readable muted */
       
       --accent-dim: #0891b2;      /* cyan-600 */
       --accent-light: #67e8f9;    /* cyan-300 */
-      --accent-bg: rgba(6, 182, 212, 0.1);
-      --accent-bg-strong: rgba(6, 182, 212, 0.15);
+      --accent-bg: rgba(6, 182, 212, 0.15);   /* Stronger accent bg */
+      --accent-bg-strong: rgba(6, 182, 212, 0.25);
       
       /* Semantic */
       --success: #10b981;  /* emerald-500 */
@@ -90,17 +90,17 @@
         --bg-deep: #f8fafc;
         --bg-elevated: #ffffff;
         --bg-hover: #f1f5f9;
-        --border: #e2e8f0;
-        --border-bright: #cbd5e1;
+        --border: #d1d5db;        /* Brighter border for light mode */
+        --border-bright: #9ca3af;
         --text-primary: #0f172a;
-        --text-secondary: #475569;
-        --text-muted: #64748b;
-        --accent-bg: rgba(6, 182, 212, 0.1);
-        --accent-bg-strong: rgba(6, 182, 212, 0.15);
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
-        --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.12);
+        --text-secondary: #374151;  /* Darker for readability */
+        --text-muted: #6b7280;
+        --accent-bg: rgba(6, 182, 212, 0.15);
+        --accent-bg-strong: rgba(6, 182, 212, 0.25);
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+        --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.15);
       }
     }
     
@@ -151,9 +151,9 @@
     }
     
     /* Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track { background: var(--bg-deep); }
-    ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: var(--radius-full); }
+    ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: var(--radius-full); border: 2px solid var(--bg-deep); }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     
     /* ============================================
@@ -326,16 +326,17 @@
       gap: var(--space-md);
       padding: var(--space-lg);
       border-bottom: 1px solid var(--border);
+      background: var(--bg-deep);
     }
     
-    .card-title-group { flex: 1; }
     .card-title {
       font-size: 1rem;
       font-weight: 600;
       letter-spacing: -0.01em;
       margin-bottom: var(--space-xs);
+      color: var(--text-primary);
     }
-    .card-subtitle { font-size: 0.75rem; color: var(--text-muted); }
+    .card-subtitle { font-size: 0.8125rem; color: var(--text-secondary); }
     
     .card-content { padding: var(--space-lg); }
     .card-footer {
@@ -404,16 +405,13 @@
       line-height: 1.1;
       letter-spacing: -0.03em;
       font-family: 'JetBrains Mono', monospace;
-      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text-primary);
     }
     
     .metric-label {
-      font-size: 0.8125rem;
-      color: var(--text-muted);
-      font-weight: 400;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 500;
       margin-top: var(--space-xs);
     }
     
@@ -468,7 +466,7 @@
     
     .data-table thead {
       background: var(--bg-deep);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--border-bright);
     }
     
     .data-table th {
@@ -478,7 +476,7 @@
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       white-space: nowrap;
     }
     
@@ -486,6 +484,7 @@
       padding: var(--space-md) var(--space-lg);
       border-bottom: 1px solid var(--border);
       transition: background var(--duration-fast);
+      color: var(--text-primary);
     }
     
     .data-table tbody tr { transition: background var(--duration-fast); }
@@ -571,12 +570,12 @@
       justify-content: center;
       padding: var(--space-2xl);
       text-align: center;
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
     
-    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--space-md); opacity: 0.5; }
-    .empty-state h3 { font-size: 1.125rem; margin-bottom: var(--space-xs); color: var(--text-secondary); }
-    .empty-state p { font-size: 0.875rem; max-width: 280px; }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--space-md); opacity: 0.6; }
+    .empty-state h3 { font-size: 1.125rem; margin-bottom: var(--space-xs); color: var(--text-primary); }
+    .empty-state p { font-size: 0.875rem; max-width: 280px; color: var(--text-secondary); }
     
     /* ============================================
        LOADING SKELETONS
@@ -690,7 +689,7 @@
     }
     
     .fm-stagger-children > * {
-      opacity: 0;
+      opacity: 1;
     }
     
     /* Interactive hover states */
@@ -801,12 +800,12 @@
         </div>
         <div class="header-title-group">
           <h1 class="header-title">AI Risk Manager</h1>
-          <span class="header-subtitle">Real-time Model Risk Assessment & Monitoring</span>
+          <span class="header-subtitle">Real-time Model Risk Assessment and Monitoring</span>
         </div>
       </div>
       
       <div class="header-actions">
-        <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-xs) var(--space-sm); background: var(--accent-bg); border: 1px solid var(--accent); border-radius: var(--radius-full); color: var(--accent); font-size: 0.75rem; font-weight: 500;">
+        <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-xs) var(--space-sm); background: var(--accent-bg-strong); border: 1px solid var(--accent); border-radius: var(--radius-full); color: var(--accent); font-size: 0.75rem; font-weight: 500;">
           <span class="status-dot" aria-hidden="true"></span>
           <span>System Online</span>
         </div>
@@ -858,8 +857,8 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-md);">
           <h2 id="models-heading" style="font-size: 1.125rem; font-weight: 600;">Registered Models</h2>
           <div style="display: flex; gap: var(--space-sm);" class="fm-stagger-children">
-            <input type="search" placeholder="Search models..." class="btn btn-secondary btn-sm" style="padding: var(--space-xs) var(--space-md); min-width: 220px; background: var(--bg-deep); border-color: var(--border);" aria-label="Search models" id="modelSearch">
-            <select class="btn btn-secondary btn-sm" style="padding: var(--space-xs) var(--space-md); background: var(--bg-deep); border-color: var(--border);" aria-label="Filter by risk level" id="riskFilter">
+            <input type="search" placeholder="Search models..." class="btn btn-secondary btn-sm" style="padding: var(--space-xs) var(--space-md); min-width: 220px; background: var(--bg-deep); border-color: var(--border-bright); color: var(--text-primary);" aria-label="Search models" id="modelSearch">
+            <select class="btn btn-secondary btn-sm" style="padding: var(--space-xs) var(--space-md); background: var(--bg-deep); border-color: var(--border-bright); color: var(--text-primary);" aria-label="Filter by risk level" id="riskFilter">
               <option value="">All Risk Levels</option>
               <option value="low">Low Risk</option>
               <option value="medium">Medium Risk</option>
@@ -869,7 +868,7 @@
           </div>
         </div>
         
-        <div class="card table-card fm-card-enter" id="modelsTableContainer">
+        <div class="card table-card" id="modelsTableContainer">
           <!-- Injected by JS -->
         </div>
       </section>
@@ -877,15 +876,199 @@
   </div>
   
   <!-- Toast Container -->
+<!-- Toast Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite" aria-label="Notifications"></div>
-  
+
+  <!-- Assessment Modal -->
+  <div class="modal-overlay" id="assessmentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" style="display: none;">
+    <div class="modal-container fm-hover-lift" style="max-width: 720px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; padding: var(--space-lg); border-bottom: 1px solid var(--border);">
+        <h2 id="modalTitle" style="font-size: 1.25rem; font-weight: 600;">New Risk Assessment</h2>
+        <button class="btn btn-ghost btn-icon" id="closeModal" aria-label="Close modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="assessmentForm" novalidate>
+        <div class="modal-body" style="padding: var(--space-lg);">
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); margin-bottom: var(--space-lg);">
+            <div class="form-group">
+              <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Model ID</label>
+              <input type="text" id="modelId" name="modelId" required placeholder="e.g., fraud-detector-v3" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;" aria-required="true">
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Model Name</label>
+              <input type="text" id="modelName" name="modelName" required placeholder="e.g., Fraud Detection Model v3" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;" aria-required="true">
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Model Type</label>
+              <select id="modelType" name="modelType" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+                <option value="classification">Classification</option>
+                <option value="regression">Regression</option>
+                <option value="generative">Generative AI</option>
+                <option value="recommendation">Recommendation</option>
+                <option value="clustering">Clustering</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Framework</label>
+              <select id="modelFramework" name="modelFramework" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+                <option value="xgboost">XGBoost</option>
+                <option value="lightgbm">LightGBM</option>
+                <option value="catboost">CatBoost</option>
+                <option value="sklearn">Scikit-learn</option>
+                <option value="pytorch">PyTorch</option>
+                <option value="tensorflow">TensorFlow</option>
+                <option value="huggingface">Hugging Face</option>
+                <option value="vllm">vLLM</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Deployment Context</label>
+              <textarea id="deploymentContext" name="deploymentContext" rows="2" placeholder="Describe where and how this model is deployed..." style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem; resize: vertical;"></textarea>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid var(--border); padding-top: var(--space-lg); margin-bottom: var(--space-lg);">
+            <h3 style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-md); color: var(--text-primary);">Performance Metrics</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md);">
+              <div class="form-group">
+                <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Accuracy (%)</label>
+                <input type="number" id="accuracy" name="accuracy" min="0" max="100" step="0.1" placeholder="94.5" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+              </div>
+              <div class="form-group">
+                <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Precision (%)</label>
+                <input type="number" id="precision" name="precision" min="0" max="100" step="0.1" placeholder="91.2" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+              </div>
+              <div class="form-group">
+                <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Recall (%)</label>
+                <input type="number" id="recall" name="recall" min="0" max="100" step="0.1" placeholder="89.0" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+              </div>
+              <div class="form-group">
+                <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">F1 Score (%)</label>
+                <input type="number" id="f1Score" name="f1Score" min="0" max="100" step="0.1" placeholder="90.0" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+              </div>
+              <div class="form-group">
+                <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">AUC-ROC (%)</label>
+                <input type="number" id="aucRoc" name="aucRoc" min="0" max="100" step="0.1" placeholder="96.0" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+              </div>
+              <div class="form-group">
+                <label style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: var(--space-xs);">Latency (ms)</label>
+                <input type="number" id="latency" name="latency" min="0" step="1" placeholder="45" style="width: 100%; padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.875rem;">
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid var(--border); padding-top: var(--space-lg); margin-bottom: var(--space-lg);">
+            <h3 style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-md); color: var(--text-primary);">Risk Factors to Analyze</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm);">
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="bias" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Bias and Fairness</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="security" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Security</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="performance" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Performance</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="privacy" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Privacy</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="robustness" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Robustness</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="explainability" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Explainability</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="drift" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Data Drift</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="compliance" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Compliance</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-deep); border: 1px solid var(--border-bright); border-radius: var(--radius-md); cursor: pointer; transition: all var(--duration-fast);" class="fm-hover-glow">
+                <input type="checkbox" name="riskFactors" value="ethics" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                <span style="font-size: 0.8125rem; color: var(--text-primary);">Ethics</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid var(--border); padding-top: var(--space-lg);">
+            <label style="display: flex; align-items: flex-start; gap: var(--space-sm); cursor: pointer;">
+              <input type="checkbox" id="useLLM" name="useLLM" checked style="width: 18px; height: 18px; accent-color: var(--accent); margin-top: 2px; flex-shrink: 0;">
+              <div>
+                <div style="font-weight: 500; font-size: 0.875rem; color: var(--text-primary);">Use LLM-Powered Deep Analysis (Gemini)</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Enables 12-category risk analysis with AI reasoning. Falls back to heuristic if LLM unavailable.</div>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-sm); padding: var(--space-lg); border-top: 1px solid var(--border); background: var(--bg-deep);">
+          <button type="button" class="btn btn-secondary" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitAssessment">
+            <span class="btn-text">Run Assessment</span>
+            <span class="btn-loading" style="display: none;">
+              <svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+                <path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"></path>
+              </svg>
+              Analyzing...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+      z-index: var(--z-modal); display: flex; align-items: center; justify-content: center; padding: var(--space-lg);
+      opacity: 0; visibility: hidden; transition: opacity var(--duration-base), visibility var(--duration-base);
+    }
+    .modal-overlay.open { opacity: 1; visibility: visible; }
+    .modal-container { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-xl); transform: scale(0.95) translateY(20px); transition: transform var(--duration-base) var(--ease-spring); }
+    .modal-overlay.open .modal-container { transform: scale(1) translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .modal-overlay, .modal-container { transition: none !important; }
+      .modal-overlay.open .modal-container { transform: none !important; }
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg-strong);
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); opacity: 0.7; }
+  </style>
+
   <script>
-    // ============================================
     // FRAMER MOTION SETUP
     // ============================================
-    const { animate, stagger, inView, scroll } = Motion;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// ============================================
+    // FRAMER MOTION SETUP (with graceful fallback)
+    // ============================================
+    let Motion;
+    try {
+      Motion = window.Motion || window.framerMotion;
+    } catch (e) {
+      console.warn('Framer Motion not loaded, using CSS fallbacks');
+    }
     
+    const { animate, stagger, inView, scroll } = Motion || {
+      animate: (el, props, opts) => ({ finished: Promise.resolve() }),
+      stagger: (delay) => delay,
+      inView: () => {},
+      scroll: () => {}
+    };
+    
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // Animation presets
     const animations = {
       pageEnter: { opacity: [0, 1], y: [20, 0], transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] } },
@@ -1094,7 +1277,7 @@
       try {
         const [healthResp, modelsResp] = await Promise.all([
           fetchWithRetry(`${API_BASE}/health`),
-          fetchWithRetry(`${API_BASE}/api/v1/models`)
+          fetchWithRetry(`${API_BASE}/api/v1/models`).catch(() => ({ data: [] }))
         ]);
         
         let assessmentsResp = { data: [] };
@@ -1111,7 +1294,8 @@
         };
       } catch (error) {
         console.error('Dashboard data fetch failed:', error);
-        throw error;
+        // Return empty data instead of throwing - demo mode will handle rendering
+        return { health: {}, models: [], assessments: [] };
       }
     };
     
@@ -1142,7 +1326,7 @@
       
       // Render with initial hidden state
       elements.metricsGrid.innerHTML = metrics.map((m, i) => `
-        <div class="metric-card fm-hover-lift" style="--metric-color: ${m.color}; --metric-bg: ${m.bg}; opacity: 0; transform: translateY(40px);">
+        <div class="metric-card fm-hover-lift" style="--metric-color: ${m.color}; --metric-bg: ${m.bg};">
           <div class="metric-icon">${m.icon}</div>
           <div class="metric-value">${m.value}</div>
           <div class="metric-label">${m.label}</div>
@@ -1155,12 +1339,10 @@
         </div>
       `).join('');
       
-      // Animate in with Framer Motion stagger
+      // Animate in with Framer Motion stagger (if available)
       const cards = elements.metricsGrid.querySelectorAll('.metric-card');
-      if (!prefersReducedMotion) {
+      if (!prefersReducedMotion && typeof Motion !== 'undefined') {
         await animateStaggered(Array.from(cards), animations.metricEnter, 0.08);
-      } else {
-        cards.forEach(c => { c.style.opacity = '1'; c.style.transform = 'translateY(0)'; });
       }
       
       // Add hover listeners
@@ -1175,29 +1357,21 @@
     `;
     
     const renderCharts = async (models, assessments) => {
-      // Show skeletons first
+      // Show skeletons first - no animation wait for speed
       elements.chartsGrid.innerHTML = `
-        <div class="card chart-card" id="biasChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(300)}</div>
-        <div class="card chart-card" id="securityChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(300)}</div>
-        <div class="card chart-card full-width" id="performanceChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(400)}</div>
-        <div class="card chart-card full-width" id="riskTrendChart" style="opacity: 0; transform: scale(0.96);">${createChartSkeleton(400)}</div>
+        <div class="card chart-card" id="biasChart">${createChartSkeleton(300)}</div>
+        <div class="card chart-card" id="securityChart">${createChartSkeleton(300)}</div>
+        <div class="card chart-card full-width" id="performanceChart">${createChartSkeleton(400)}</div>
+        <div class="card chart-card full-width" id="riskTrendChart">${createChartSkeleton(400)}</div>
       `;
       
-      // Animate skeletons in
-      const chartCards = elements.chartsGrid.querySelectorAll('.chart-card');
-      if (!prefersReducedMotion) {
-        await animateStaggered(Array.from(chartCards), animations.chartEnter, 0.1);
-      } else {
-        chartCards.forEach(c => { c.style.opacity = '1'; c.style.transform = 'scale(1)'; });
-      }
-      
-      // Render charts with slight delay for smooth transition
-      await new Promise(r => setTimeout(r, 100));
-      
-      renderBiasChart(assessments);
-      renderSecurityChart(assessments);
-      renderPerformanceChart(assessments);
-      renderRiskTrendChart(assessments);
+      // Render all charts in PARALLEL for speed - no delay
+      await Promise.all([
+        renderBiasChart(assessments),
+        renderSecurityChart(assessments),
+        renderPerformanceChart(assessments),
+        renderRiskTrendChart(assessments)
+      ]);
     };
     
     // Chart render functions remain the same but with enhanced Plotly animations
@@ -1216,7 +1390,8 @@
           opacity: 0.85,
           line: { color: 'rgba(255,255,255,0.1)', width: 1 }
         },
-        opacity: 0.9
+        opacity: 0.9,
+        hovertemplate: '<b>%{theta}</b><br>Bias Risk: %{r:.0f}%<extra></extra>'
       };
       
       const layout = {
@@ -1253,7 +1428,8 @@
         fillcolor: 'rgba(6, 182, 212, 0.15)',
         line: { color: CHART_COLORS.primary, width: 2.5 },
         marker: { color: CHART_COLORS.primary, size: 6 },
-        opacity: 0.9
+        opacity: 0.9,
+        hovertemplate: '<b>%{theta}</b><br>Security Risk: %{r:.0f}%<extra></extra>'
       };
       
       const layout = {
@@ -1302,7 +1478,8 @@
         text: values.map(v => `${v}%`),
         textposition: 'outside',
         textfont: { color: CHART_COLORS.textPrimary, size: 11 },
-        cliponaxis: false
+        cliponaxis: false,
+        hovertemplate: '<b>%{y}</b><br>Score: %{x:.0f}%<extra></extra>'
       };
       
       const layout = {
@@ -1371,7 +1548,7 @@
       
       if (filtered.length === 0) {
         elements.modelsTableContainer.innerHTML = `
-          <div class="empty-state" style="opacity: 0; transform: translateY(20px);">
+          <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
@@ -1379,13 +1556,6 @@
             <p>${state.searchQuery || state.riskFilter ? 'Try adjusting your filters' : 'Register your first model to get started'}</p>
           </div>
         `;
-        if (!prefersReducedMotion) {
-          const emptyState = elements.modelsTableContainer.querySelector('.empty-state');
-          await animateSingle(emptyState, { opacity: [0, 1], y: [20, 0], transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] } });
-        } else {
-          elements.modelsTableContainer.querySelector('.empty-state').style.opacity = '1';
-          elements.modelsTableContainer.querySelector('.empty-state').style.transform = 'translateY(0)';
-        }
         return;
       }
       
@@ -1396,7 +1566,7 @@
         const category = model.category || categories[Math.floor(Math.random() * categories.length)];
         
         return `
-          <tr class="fm-row-enter fm-hover-scale" data-row-index="${i}" style="opacity: 0; transform: translateX(-20px);">
+          <tr class="fm-row-enter fm-hover-scale" data-row-index="${i}">
             <td>
               <div class="model-name-cell">
                 <div class="model-avatar">${(model.modelName || 'M')[0].toUpperCase()}</div>
@@ -1443,14 +1613,14 @@
             <tbody>${rows}</tbody>
           </table>
         </div>
-        ${filtered.length > 20 ? `<div class="card-footer" style="justify-content: center; color: var(--text-muted); font-size: 0.8125rem; opacity: 0; transform: translateY(10px);">Showing 20 of ${filtered.length} models</div>` : ''}
+        ${filtered.length > 20 ? `<div class="card-footer" style="justify-content: center; color: var(--text-muted); font-size: 0.8125rem;">Showing 20 of ${filtered.length} models</div>` : ''}
       `;
       
-      // Animate rows in with stagger
+      // Animate rows in with stagger (if Framer Motion available)
       const rowElements = elements.modelsTableContainer.querySelectorAll('tbody tr');
       const footerElement = elements.modelsTableContainer.querySelector('.card-footer');
       
-      if (!prefersReducedMotion) {
+      if (!prefersReducedMotion && typeof Motion !== 'undefined') {
         await animateStaggered(Array.from(rowElements), animations.rowEnter, 0.04);
         if (footerElement) {
           await animateSingle(footerElement, { opacity: [0, 1], y: [10, 0], transition: { duration: 0.3, delay: 0.3 } });
@@ -1502,10 +1672,10 @@
         state.assessments = data.assessments;
         state.loading = false;
         
-        // Render all sections
-        await renderMetrics(state.models, state.assessments);
-        await renderCharts(state.models, state.assessments);
-        await renderModelsTable(state.models);
+        // Render all sections - each wrapped so one failure doesn't stop others
+        try { await renderMetrics(state.models, state.assessments); } catch (e) { console.error('renderMetrics failed:', e); }
+        try { await renderCharts(state.models, state.assessments); } catch (e) { console.error('renderCharts failed:', e); }
+        try { await renderModelsTable(state.models); } catch (e) { console.error('renderModelsTable failed:', e); }
         
         // Initialize Lucide icons
         if (window.lucide) lucide.createIcons();
@@ -1528,9 +1698,9 @@
         }));
         
         state.models = demoModels;
-        await renderMetrics(demoModels, []);
-        await renderCharts(demoModels, []);
-        await renderModelsTable(demoModels);
+        try { await renderMetrics(demoModels, []); } catch (e) { console.error('renderMetrics demo failed:', e); }
+        try { await renderCharts(demoModels, []); } catch (e) { console.error('renderCharts demo failed:', e); }
+        try { await renderModelsTable(demoModels); } catch (e) { console.error('renderModelsTable demo failed:', e); }
         
         if (window.lucide) lucide.createIcons();
         if (!state.mounted) { initScrollReveal(); state.mounted = true; }
@@ -1541,6 +1711,29 @@
     // INTERACTIVE BUTTON ANIMATIONS
     // ============================================
     const setupButtonAnimations = () => {
+      // Modal elements
+      const modal = document.getElementById('assessmentModal');
+      const closeModal = document.getElementById('closeModal');
+      const cancelModal = document.getElementById('cancelModal');
+      const assessmentForm = document.getElementById('assessmentForm');
+      const submitBtn = document.getElementById('submitAssessment');
+      const btnText = submitBtn?.querySelector('.btn-text');
+      const btnLoading = submitBtn?.querySelector('.btn-loading');
+
+      const openModal = () => {
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => modal.classList.add('open'));
+        document.body.style.overflow = 'hidden';
+      };
+
+      const closeModalFn = () => {
+        modal.classList.remove('open');
+        setTimeout(() => {
+          modal.style.display = 'none';
+          document.body.style.overflow = '';
+        }, 300);
+      };
+
       // Refresh button
       elements.refreshBtn?.addEventListener('click', async () => {
         const icon = elements.refreshBtn.querySelector('svg');
@@ -1551,10 +1744,104 @@
         showToast('Refreshed', 'Dashboard data updated', 'success');
       });
       
-      // Assess button
+      // Assess button - opens modal
       elements.assessBtn?.addEventListener('click', () => {
         animate(elements.assessBtn, animations.tapScale).then(() => animate(elements.assessBtn, { scale: 1 }));
-        showToast('New Assessment', 'Redirecting to assessment page...', 'info');
+        openModal();
+      });
+
+      // Close modal handlers
+      closeModal?.addEventListener('click', closeModalFn);
+      cancelModal?.addEventListener('click', closeModalFn);
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) closeModalFn();
+      });
+
+      // Escape key closes modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal?.classList.contains('open')) {
+          closeModalFn();
+        }
+      });
+
+      // Form submission
+      assessmentForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline-flex';
+        
+        const formData = new FormData(assessmentForm);
+        const riskFactors = formData.getAll('riskFactors');
+        const useLLM = formData.get('useLLM') === 'on';
+        
+        const payload = {
+          modelId: formData.get('modelId'),
+          modelName: formData.get('modelName'),
+          modelConfig: {
+            type: formData.get('modelType'),
+            framework: formData.get('modelFramework')
+          },
+          deploymentContext: formData.get('deploymentContext'),
+          metrics: {
+            accuracy: parseFloat(formData.get('accuracy')) || null,
+            precision: parseFloat(formData.get('precision')) || null,
+            recall: parseFloat(formData.get('recall')) || null,
+            f1_score: parseFloat(formData.get('f1Score')) || null,
+            auc_roc: parseFloat(formData.get('aucRoc')) || null,
+            latency: parseInt(formData.get('latency')) || null
+          },
+          riskFactors,
+          useLLM
+        };
+        
+        // Clean up null values
+        Object.keys(payload.metrics).forEach(key => {
+          if (payload.metrics[key] === null) delete payload.metrics[key];
+        });
+        
+        try {
+          // First, check if we have auth token
+          const token = localStorage.getItem('authToken');
+          const headers = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+          
+          // Determine endpoint based on LLM preference
+          const endpoint = useLLM ? '/api/v1/risk/assess-llm' : '/api/public/risk/quick-check';
+          
+          const response = await fetch(`${API_BASE}${endpoint}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) throw new Error(result.message || 'Assessment failed');
+          
+          closeModalFn();
+          assessmentForm.reset();
+          
+          // Re-check risk factors defaults
+          ['bias', 'security', 'performance'].forEach(f => {
+            const cb = assessmentForm.querySelector(`input[value="${f}"]`);
+            if (cb) cb.checked = true;
+          });
+          document.getElementById('useLLM').checked = true;
+          
+          showToast('Assessment Complete', `Risk analysis finished for ${payload.modelName}`, 'success');
+          await initDashboard(); // Refresh dashboard
+          
+        } catch (error) {
+          console.error('Assessment error:', error);
+          showToast('Assessment Failed', error.message, 'error');
+        } finally {
+          submitBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnLoading.style.display = 'none';
+        }
       });
       
       // Period filter buttons
