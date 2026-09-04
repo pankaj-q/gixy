@@ -24,6 +24,14 @@ export const LLMConfig = {
       timeout: parseInt(process.env.ANTHROPIC_TIMEOUT) || 60000,
       maxRetries: parseInt(process.env.ANTHROPIC_MAX_RETRIES) || 3,
     },
+    gemini: {
+      enabled: !!process.env.GEMINI_API_KEY,
+      apiKey: process.env.GEMINI_API_KEY,
+      baseUrl: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta',
+      defaultModel: process.env.GEMINI_DEFAULT_MODEL || 'gemini-1.5-flash',
+      timeout: parseInt(process.env.GEMINI_TIMEOUT) || 60000,
+      maxRetries: parseInt(process.env.GEMINI_MAX_RETRIES) || 3,
+    },
   },
 
   // Engine settings
@@ -124,9 +132,10 @@ export function validateConfig() {
   // Check if at least one provider is configured
   const hasOpenAI = LLMConfig.providers.openai.enabled;
   const hasAnthropic = LLMConfig.providers.anthropic.enabled;
+  const hasGemini = LLMConfig.providers.gemini.enabled;
 
-  if (!hasOpenAI && !hasAnthropic) {
-    errors.push('No LLM provider configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY');
+  if (!hasOpenAI && !hasAnthropic && !hasGemini) {
+    errors.push('No LLM provider configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY');
   }
 
   // Check engine configurations
@@ -145,6 +154,9 @@ export function validateConfig() {
   }
   if (!hasAnthropic) {
     warnings.push('Anthropic not configured - no fallback provider available');
+  }
+  if (!hasGemini) {
+    warnings.push('Gemini not configured - consider adding for free tier access');
   }
 
   return {

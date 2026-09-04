@@ -1,6 +1,7 @@
 import { LLMProvider } from './LLMProvider.js';
 import { OpenAIProvider } from './OpenAIProvider.js';
 import { AnthropicProvider } from './AnthropicProvider.js';
+import { GeminiProvider } from './GeminiProvider.js';
 
 /**
  * LLM Provider Factory - Creates and manages LLM provider instances
@@ -83,6 +84,8 @@ export class LLMProviderFactory {
         return new OpenAIProvider(providerConfig);
       case 'anthropic':
         return new AnthropicProvider(providerConfig);
+      case 'gemini':
+        return new GeminiProvider(providerConfig);
       default:
         throw new Error(`Unknown provider type: ${type}`);
     }
@@ -119,15 +122,26 @@ export const defaultFactory = new LLMProviderFactory();
  * Initialize default providers from environment
  */
 export function initializeDefaultProviders() {
+  let hasDefault = false;
+
   // Register OpenAI if API key is available
   if (process.env.OPENAI_API_KEY) {
-    defaultFactory.registerProvider('openai', new OpenAIProvider(), true);
+    defaultFactory.registerProvider('openai', new OpenAIProvider(), !hasDefault);
+    hasDefault = true;
   }
 
   // Register Anthropic if API key is available
   if (process.env.ANTHROPIC_API_KEY) {
-    const isDefault = !process.env.OPENAI_API_KEY;
+    const isDefault = !hasDefault;
     defaultFactory.registerProvider('anthropic', new AnthropicProvider(), isDefault);
+    hasDefault = hasDefault || isDefault;
+  }
+
+  // Register Gemini if API key is available
+  if (process.env.GEMINI_API_KEY) {
+    const isDefault = !hasDefault;
+    defaultFactory.registerProvider('gemini', new GeminiProvider(), isDefault);
+    hasDefault = hasDefault || isDefault;
   }
 
   return defaultFactory;

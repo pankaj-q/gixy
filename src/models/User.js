@@ -73,15 +73,17 @@ userSchema.statics.findActive = function() {
 };
 
 // Pre-save hook to hash password if modified
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('passwordHash')) return next();
+userSchema.pre('save', async function() {
+  if (!this.isModified('passwordHash')) return;
   
   try {
-    const saltRounds = 12;
-    this.passwordHash = await bcrypt.hash(this.passwordHash, saltRounds);
-    next();
+    // Only hash if not already a bcrypt hash
+    if (!this.passwordHash.startsWith('$2b$') && !this.passwordHash.startsWith('$2a$') && !this.passwordHash.startsWith('$2y$')) {
+      const saltRounds = 12;
+      this.passwordHash = await bcrypt.hash(this.passwordHash, saltRounds);
+    }
   } catch (error) {
-    next(error);
+    throw error;
   }
 });
 

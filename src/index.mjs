@@ -17,6 +17,7 @@ import { RiskAssessment } from './models/RiskAssessment.js';
 import { RegisteredModel } from './models/RegisteredModel.js';
 import { User } from './models/User.js';
 import { NotificationManager, MemoryAlertStore } from './alerts/index.js';
+import { createLLMSystem } from './llm/index.js';
 
 dotenv.config();
 
@@ -25,6 +26,18 @@ const PORT = config.port || 3000;
 
 // Initialize risk engine
 const riskEngine = new RiskEngine();
+
+// Initialize LLM system
+let llmSystem;
+try {
+  llmSystem = createLLMSystem({ skipValidation: true });
+  logger.info('LLM system initialized', { 
+    engines: Object.keys(llmSystem.engines).filter(k => llmSystem.engines[k]) 
+  });
+} catch (err) {
+  logger.warn('LLM system initialization failed - LLM features unavailable', { error: err.message });
+}
+
 
 // Security middleware
 app.use(helmet({
@@ -340,6 +353,132 @@ apiRouter.get('/compliance/frameworks', asyncHandler(async (req, res) => {
     ],
     message: 'Available compliance frameworks'
   });
+})); // End of existing /compliance/frameworks endpoint
+
+// LLM-powered Compliance check (replaces stub)
+apiRouter.post('/compliance/check-llm', validate(complianceCheckSchema), asyncHandler(async (req, res) => {
+  if (!llmSystem?.engines.complianceChecker) {
+    return res.status(503).json({
+      status: 'fail',
+      message: 'Compliance checker not available. Configure LLM provider.'
+    });
+  }
+  
+  const { modelId, framework } = req.body;
+  
+  const model = await RegisteredModel.findByModelId(modelId);
+  const modelInfo = model ? {
+    modelId: model.modelId,
+    modelName: model.modelName,
+    version: model.version,
+    description: model.description,
+    metadata: model.metadata
+  } : { modelId };
+  
+  const result = await llmSystem.engines.complianceChecker.checkCompliance(modelInfo, framework, {
+    provider: req.body.provider
+  });
+  
+  auditLog('compliance_check', req.user?.id, { modelId, framework, compliant: result.compliant });
+  
+  res.json({
+    success: true,
+    data: result,
+    message: 'LLM compliance check completed'
+  });
+}));
+
+// Model Card Generation endpoint
+apiRouter.post('/model-cards/generate', validate(assessRiskSchema), asyncHandler(async (req, res) => {
+  if (!llmSystem?.engines.modelCardGenerator) {
+    return res.status(503).json({
+      status: 'fail',
+      message: 'Model card generator not available. Configure LLM provider.'
+    });
+  }
+  
+  const modelInfo = {
+    modelId: req.body.modelId,
+    modelName: req.body.modelName,
+    version: req.body.version,
+    modelConfig: req.body.modelConfig,
+    trainingData: req.body.trainingData,
+    metrics: req.body.metrics
+  };
+  
+  const result = await llmSystem.engines.modelCardGenerator.generateModelCard(modelInfo, {
+    provider: req.body.provider
+  });
+  
+  auditLog('model_card_generated', req.user?.id, { modelId: req.body.modelId });
+  
+  res.json({
+    success: true,
+    data: result,
+    message: 'Model card generated'
+  });
+}));
+
+// LLM-powered Risk Assessment endpoint
+apiRouter.post('/risk/assess-llm', validate(assessRiskSchema), asyncHandler(async (req, res) => {
+  if (!llmSystem?.engines.riskAnalysis) {
+    return res.status(503).json({
+      status: 'fail',
+      message: 'LLM risk analysis not available. Configure LLM provider.'
+    });
+  }
+  
+  const modelInfo = {
+    modelId: req.body.modelId,
+    modelName: req.body.modelName,
+    version: req.body.version,
+    modelConfig: req.body.modelConfig,
+    trainingData: req.body.trainingData,
+    metrics: req.body.metrics
+  };
+  
+  const result = await llmSystem.engines.riskAnalysis.analyzeModel(modelInfo, {
+    provider: req.body.provider,
+    temperature: req.body.temperature,
+    maxTokens: req.body.maxTokens
+  });
+  
+  // Save to database
+  try {
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(req.user?.id);
+    const savedAssessment = await RiskAssessment.create({
+      modelId: req.body.modelId,
+      modelName: req.body.modelName,
+      version: req.body.version || '1.0.0',
+      riskFactors: result.riskFactors || [],
+      riskScore: result.riskScore || 0,
+      severity: result.severity || 'low',
+      compliant: result.compliant !== false,
+      metadata: {
+        ...result.metadata,
+        createdBy: isValidObjectId ? req.user?.id : undefined,
+        llmProvider: result.provider || llmSystem.config.global.defaultProvider
+      },
+      trainingData: req.body.trainingData,
+      modelConfig: req.body.modelConfig,
+      metrics: req.body.metrics
+    });
+    
+    auditLog('llm_risk_assessment', req.user?.id, { modelId: req.body.modelId, riskScore: result.riskScore });
+    
+    res.json({
+      success: true,
+      data: savedAssessment.toJSON(),
+      message: 'LLM risk assessment completed and saved'
+    });
+  } catch (dbError) {
+    logger.warn('Failed to save LLM assessment to database', { error: dbError.message });
+    res.json({
+      success: true,
+      data: result,
+      message: 'LLM risk assessment completed (not saved to database)'
+    });
+  }
 }));
 
 // Assessment history endpoints

@@ -7,9 +7,10 @@
 import { LLMProvider } from './LLMProvider.js';
 import { OpenAIProvider } from './OpenAIProvider.js';
 import { AnthropicProvider } from './AnthropicProvider.js';
+import { GeminiProvider } from './GeminiProvider.js';
 import { LLMProviderFactory, defaultFactory, initializeDefaultProviders } from './LLMProviderFactory.js';
 
-export { LLMProvider, OpenAIProvider, AnthropicProvider, LLMProviderFactory, defaultFactory, initializeDefaultProviders };
+export { LLMProvider, OpenAIProvider, AnthropicProvider, GeminiProvider, LLMProviderFactory, defaultFactory, initializeDefaultProviders };
 
 // Engines
 import { RiskAnalysisEngine } from './RiskAnalysisEngine.js';
@@ -55,6 +56,12 @@ export function createLLMSystem(customConfig = {}) {
   if (config.providers.anthropic.enabled) {
     factory.registerProvider('anthropic', new AnthropicProvider(config.providers.anthropic), 
       config.global.defaultProvider === 'anthropic');
+  }
+
+  // Register Gemini provider
+  if (config.providers.gemini.enabled) {
+    factory.registerProvider('gemini', new GeminiProvider(config.providers.gemini), 
+      config.global.defaultProvider === 'gemini');
   }
 
   // Create engines
@@ -143,6 +150,7 @@ export default {
   LLMProvider,
   OpenAIProvider,
   AnthropicProvider,
+  GeminiProvider,
   LLMProviderFactory,
   defaultFactory,
   initializeDefaultProviders,
