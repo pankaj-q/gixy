@@ -28,7 +28,7 @@ export const versionSchema = Joi.string().pattern(/^\d+\.\d+\.\d+$/).optional()
   });
 
 export const riskFactorsSchema = Joi.array().items(
-  Joi.string().valid('bias', 'fairness', 'security', 'vulnerability', 'performance', 'compliance', 'safety', 'privacy')
+  Joi.string().valid('bias', 'fairness', 'security', 'vulnerability', 'performance', 'compliance', 'safety', 'privacy', 'robustness', 'explainability', 'dataDrift', 'ethics')
 ).min(0).max(20).optional();
 
 export const trainingDataSchema = Joi.object({
@@ -88,7 +88,7 @@ export const quickCheckSchema = Joi.object({
     algorithm: Joi.string().optional(),
     hyperparameters: Joi.object().optional()
   }).optional(),
-  deploymentContext: Joi.string().max(2000).optional(),
+  deploymentContext: Joi.string().max(2000).allow('', null).optional(),
   riskFactors: riskFactorsSchema,
   metrics: Joi.object({
     accuracy: Joi.number().min(0).max(1).optional(),
