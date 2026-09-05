@@ -7,10 +7,13 @@ import path from 'path';
 import mongoose from 'mongoose';
 import config from './config/index.js';
 import { connectDB, disconnectDB } from './config/db.js';
+import { connectRedis, disconnectRedis, cache, getRedisClient } from './config/redis.js';
 import { errorHandler, asyncHandler } from './middleware/errorHandler.js';
 import { authenticateToken, optionalAuth, generateToken } from './middleware/auth.js';
 import { validate, assessRiskSchema, quickCheckSchema, complianceCheckSchema, registerModelSchema, updateModelSchema, listModelsQuerySchema, getAssessmentsQuerySchema, registerSchema, loginSchema, createAlertSchema, updateAlertSchema, createAlertRuleSchema, updateAlertRuleSchema, createChannelConfigSchema, updateChannelConfigSchema, listAlertsQuerySchema } from './validation/schemas.js';
 import { logger, requestLogger, auditLog } from './utils/logger.js';
+import { metricsMiddleware, getMetrics, getMetricsAsJson, updateModelsCount, updateDbConnections, recordLlmRequest, recordRiskAssessment, recordAlert, register } from './utils/metrics.js';
+import { queues, closeQueues, getQueueStats } from './queues/index.js';
 import RiskEngine from './engine/riskEngine.js';
 import RiskModel from './models/riskModel.js';
 import { RiskAssessment } from './models/RiskAssessment.js';
@@ -22,7 +25,7 @@ import { createLLMSystem } from './llm/index.js';
 dotenv.config();
 
 const app = express();
-const PORT = config.port || 3000;
+const PORT = config.port || 3007;
 
 // Initialize risk engine
 const riskEngine = new RiskEngine();
@@ -38,8 +41,10 @@ try {
   logger.warn('LLM system initialization failed - LLM features unavailable', { error: err.message });
 }
 
+console.log('✅ LLM initialization complete, setting up middleware...');
 
 // Security middleware
+console.log('🔧 Setting up helmet...');
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -52,36 +57,52 @@ app.use(helmet({
     }
   }
 }));
+console.log('✅ Helmet setup complete');
 app.use(cors({
   origin: config.env === 'production' ? process.env.FRONTEND_URL : '*',
   credentials: true
 }));
+console.log('✅ CORS setup complete');
 
 // Rate limiting
+console.log('🔧 Setting up rate limiting...');
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max,
   message: { status: 'fail', message: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false
 });
+console.log('✅ Rate limiting setup complete');
 app.use('/api/', limiter);
 
+// Metrics middleware
+console.log('🔧 Setting up metrics middleware...');
+app.use(metricsMiddleware);
+console.log('✅ Metrics middleware setup complete');
+
 // Stricter rate limiting for auth endpoints
+console.log('🔧 Setting up auth rate limiting...');
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // limit each IP to 10 requests per hour
   message: { status: 'fail', message: 'Too many authentication attempts, please try again later' }
 });
+console.log('✅ Auth rate limiting setup complete');
 
 // Body parsing
+console.log('🔧 Setting up body parsing...');
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+console.log('✅ Body parsing setup complete');
 
 // Request logging
+console.log('🔧 Setting up request logging...');
 app.use(requestLogger);
+console.log('✅ Request logging setup complete');
 
 // Health check (before DB connection, no auth required)
+console.log('🔧 Setting up health check endpoints...');
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -91,9 +112,64 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.get('/api/v1/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/v1/health', async (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStateMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  
+  let redisStatus = 'not configured';
+  if (config.redis.url) {
+    try {
+      const redisClient = getRedisClient();
+      redisStatus = redisClient?.status || 'disconnected';
+    } catch {
+      redisStatus = 'error';
+    }
+  }
+  
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    services: {
+      database: dbStateMap[dbState] || 'unknown',
+      redis: redisStatus,
+      llm: llmSystem ? 'initialized' : 'not configured'
+    },
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
 });
+console.log('✅ Health check endpoints setup complete');
+
+// Prometheus metrics endpoint
+console.log('🔧 Setting up Prometheus metrics endpoint...');
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    const metrics = await getMetrics();
+    res.send(metrics);
+  } catch (err) {
+    logger.error('Metrics error', { error: err.message });
+    res.status(500).send('Error generating metrics');
+  }
+});
+console.log('✅ Prometheus metrics endpoint setup complete');
+
+// Metrics as JSON endpoint
+app.get('/metrics/json', async (req, res) => {
+  try {
+    const metrics = await getMetricsAsJson();
+    res.json(metrics);
+  } catch (err) {
+    logger.error('Metrics JSON error', { error: err.message });
+    res.status(500).json({ error: 'Error generating metrics' });
+  }
+});
+
+// Queue stats endpoint
+app.get('/api/v1/queue/stats', authenticateToken, asyncHandler(async (req, res) => {
+  const stats = await getQueueStats();
+  res.json({ success: true, data: stats, message: 'Queue statistics retrieved' });
+}));
 
 // Auth routes (public, no authentication required)
 const authRouter = express.Router();
@@ -943,9 +1019,26 @@ async function initializeDatabase() {
   }
 }
 
+async function initializeRedis() {
+  if (!config.redis.url) {
+    console.log('ℹ️ Redis not configured (no REDIS_URL) - skipping Redis initialization');
+    logger.info('Redis not configured - skipping Redis initialization');
+    return;
+  }
+  try {
+    console.log('🔍 Attempting Redis connection...');
+    await connectRedis();
+    console.log('✅ Redis connected successfully');
+    logger.info('Redis connected successfully');
+  } catch (err) {
+    console.warn('⚠️ Redis connection failed - continuing without cache:', err.message);
+    logger.warn('Redis connection failed - continuing without cache', { error: err.message });
+  }
+}
+
 // Start server based on environment
 // Use environment variable to detect test mode
-const isTestMode = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+const isTestMode = process.env.NODE_ENV === 'test' || !!process.env.JEST_WORKER_ID;
 let server;
 let serverStarted = false;
 
@@ -953,14 +1046,21 @@ async function startServer() {
   if (serverStarted) return server;
   
   if (!isTestMode) {
+    // Initialize Redis first
+    console.log('🔍 Initializing Redis...');
+    await initializeRedis();
+    console.log('✅ Redis initialization complete - now starting HTTP server');
+    
     // For direct execution, DON'T wait for DB - start server immediately
     // DB connection happens in background
+    console.log('🔍 Starting HTTP server on port', PORT);
     server = app.listen(PORT, () => {
       logger.info(`AI Risk Manager running on port ${PORT}`, { 
         environment: config.env,
         dashboard: `http://localhost:${PORT}/dashboard`
       });
     });
+    console.log('✅ HTTP server started - listening on port', PORT);
     
     // Initialize database in background (non-blocking)
     initializeDatabase().catch(err => {
@@ -976,20 +1076,47 @@ async function startServer() {
 
 // Auto-start server for non-test environments
 if (!isTestMode) {
-  startServer();
+  console.log('🚀 Auto-starting server...');
+  console.log('isTestMode:', isTestMode);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
+  startServer().then(() => {
+    console.log('✅ Server startup complete - process should stay alive');
+    logger.info('Server startup complete');
+  }).catch(err => {
+    console.error('❌ Server startup failed:', err.message);
+    logger.error('Server startup failed', { error: err.message });
+  });
+  
+  // Prevent process exit - keep event loop alive
+  console.log('📌 Keeping process alive...');
+  setInterval(() => {}, 1000);
+} else {
+  console.log('⏭️ Skipping server start - test mode detected');
 }
 
 // Export both app and server for testing
-export { app, server, initializeDatabase };
+export { app, server, initializeDatabase, startServer };
 
 // Graceful shutdown
 async function gracefulShutdown(signal) {
   try {
     logger.info(`${signal} received, shutting down gracefully`);
+    
+    // Close queues first
+    await closeQueues();
+    
+    // Disconnect Redis
+    await disconnectRedis();
+    
+    // Disconnect database
     await disconnectDB();
+    
+    // Close HTTP server
     if (server) {
       await new Promise((resolve) => server.close(resolve));
     }
+    
     process.exit(0);
   } catch (err) {
     logger.error('Error during shutdown', { error: err.message });
