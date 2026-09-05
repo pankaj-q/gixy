@@ -514,10 +514,13 @@
               </div>
             </div>
           </div>
-          <div class="form-group toggle-group">
-            <button type="button" class="toggle" id="llmToggle" aria-label="Use LLM for deep analysis" aria-pressed="true"></button>
-            <span style="font-size:0.875rem;color:var(--text-secondary);">Use LLM for deep analysis (Gemini)</span>
-          </div>
+<div class="form-group toggle-group">
+              <input type="checkbox" class="toggle" id="llmToggle" aria-label="Use LLM for deep analysis" aria-pressed="true" hidden>
+              <span style="font-size:0.875rem;color:var(--text-secondary);">Use LLM for deep analysis (Gemini)</span>
+              <button type="button" class="toggle-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+              </button>
+            </div>
         </form>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="modalCancel">Cancel</button>
@@ -769,7 +772,16 @@
     // ===== MODAL =====
     const modal = $('#assessmentModal');
     function openModal() { modal.classList.add('open'); $('#modelId').focus(); document.body.style.overflow = 'hidden'; }
-    function closeModal() { modal.classList.remove('open'); document.body.style.overflow = ''; $('#assessmentForm').reset(); $('#llmToggle').checked = true; $('#llmToggle').setAttribute('aria-pressed', 'true'); }
+    function closeModal() { 
+      modal.classList.remove('open'); 
+      document.body.style.overflow = ''; 
+      $('#assessmentForm').reset(); 
+      const llmToggle = $('#llmToggle');
+      if (llmToggle && llmToggle.type === 'checkbox') {
+        llmToggle.checked = true;
+      }
+      $('#llmToggle').setAttribute('aria-pressed', 'true'); 
+    }
 
     // ===== ASSESSMENT SUBMIT =====
     async function submitAssessment(e) {
@@ -780,23 +792,40 @@
       btn.disabled = true; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg> Running...';
 
       const formData = new FormData(form);
+      const modelType = formData.get('modelType');
+      const modelFramework = formData.get('modelFramework');
+      
+      // Read LLM toggle state from the actual checkbox input
+      const llmToggle = $('#llmToggle');
+      const useLLM = llmToggle && llmToggle.type === 'checkbox' ? llmToggle.checked : false;
+      
       const payload = {
         modelId: formData.get('modelId'),
         modelName: formData.get('modelName'),
-        modelConfig: { type: formData.get('modelType'), framework: formData.get('modelFramework') },
         deploymentContext: formData.get('deploymentContext'),
         riskFactors: formData.getAll('riskFactor'),
-        metrics: {
-          accuracy: parseFloat(formData.get('accuracy') || 0),
-          precision: parseFloat(formData.get('precision') || 0),
-          recall: parseFloat(formData.get('recall') || 0),
-          f1: parseFloat(formData.get('f1') || 0)
-        },
-        useLLM: formData.get('useLLM') === 'on' || $('#llmToggle').checked
+        useLLM: useLLM
       };
 
+      // Only include modelConfig if values are selected
+      if (modelType || modelFramework) {
+        payload.modelConfig = {};
+        if (modelType) payload.modelConfig.type = modelType;
+        if (modelFramework) payload.modelConfig.framework = modelFramework;
+      }
+
+      // Only include metrics if any value is provided
+      const accuracy = parseFloat(formData.get('accuracy') || 0);
+      const precision = parseFloat(formData.get('precision') || 0);
+      const recall = parseFloat(formData.get('recall') || 0);
+      const f1 = parseFloat(formData.get('f1') || 0);
+      if (accuracy || precision || recall || f1) {
+        payload.metrics = { accuracy, precision, recall, f1 };
+      }
+
       try {
-        const endpoint = payload.useLLM && state.authToken ? '/api/v1/risk/assess-llm' : '/api/public/risk/quick-check';
+        // Determine endpoint: use LLM if enabled and authenticated, otherwise quick-check
+        const endpoint = useLLM && state.authToken ? '/api/v1/risk/assess-llm' : '/api/public/risk/quick-check';
         const res = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
         showToast('Assessment completed successfully!', 'success');
         closeModal();
@@ -837,7 +866,21 @@
 
       // Form
       $('#assessmentForm').onsubmit = submitAssessment;
-      $('#llmToggle').onclick = function() { this.setAttribute('aria-pressed', this.checked); };
+      // LLM toggle - sync visual button with hidden checkbox
+      const llmInput = $('#llmToggle');
+      if (llmInput && llmInput.type === 'checkbox') {
+        const toggleGroup = llmInput.parentElement;
+        if (toggleGroup) {
+          toggleGroup.onclick = (e) => {
+            // Don't toggle if clicking the label text
+            if (e.target.tagName === 'SPAN') return;
+            llmInput.checked = !llmInput.checked;
+            llmInput.setAttribute('aria-pressed', llmInput.checked);
+          };
+        }
+      }
+      // Remove old onclick that doesn't work on button elements
+      $('#llmToggle').off('click');
 
       // Model filters
       $('#modelSearch').oninput = filterModels;
