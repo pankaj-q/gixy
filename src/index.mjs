@@ -995,7 +995,11 @@ publicRouter.post('/risk/quick-check', validate(quickCheckSchema), asyncHandler(
 app.use('/api/public', publicRouter);
 
 // Serve static dashboard from public directory
-app.use('/dashboard', express.static(path.join('public', 'index.html')));
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join('public', 'index.html'), { root: process.cwd() });
+});
+
+app.use('/dashboard', express.static(path.join(process.cwd(), 'public')));
 
 // 404 handler
 app.use((req, res) => {
