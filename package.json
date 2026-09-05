@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.mjs",
+    "start:prod": "NODE_ENV=production node src/server.mjs",
     "dev": "nodemon src/server.mjs",
     "test": "jest --coverage --testPathIgnorePatterns=tests/integration",
     "test:all": "jest --coverage",
@@ -13,7 +14,13 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "lint": "eslint .",
-    "build": "echo \"Build step\" && exit 0"
+    "build": "echo \"Build step\" && exit 0",
+    "docker:build": "docker build -t gixy .",
+    "docker:run": "docker run -p 3007:3007 --env-file .env gixy",
+    "docker:dev": "docker-compose up -d",
+    "docker:prod": "docker-compose -f docker-compose.yml up -d app-prod",
+    "docker:down": "docker-compose down",
+    "db:seed": "node src/scripts/seed.js"
   },
   "repository": {
     "type": "git",
@@ -28,6 +35,10 @@
   ],
   "author": "pankaj-q",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=10.0.0"
+  },
   "bugs": {
     "url": "https://github.com/pankaj-q/gixy/issues"
   },

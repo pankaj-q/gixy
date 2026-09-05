@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: gixy-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: gixy
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - gixy-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis for queues and caching
+  redis:
+    image: redis:7-alpine
+    container_name: gixy-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gixy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Gixy Application - Development
+  app-dev:
+    build:
+      context: .
+      target: dev
+      dockerfile: Dockerfile
+    container_name: gixy-app-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3007
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/gixy?authSource=admin
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+    env_file:
+      - .env.local
+    ports:
+      - "3007:3007"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./package.json:/app/package.json
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gixy-network
+    command: npm run dev
+
+  # Gixy Application - Production
+  app-prod:
+    build:
+      context: .
+      target: production
+      dockerfile: Dockerfile
+    container_name: gixy-app-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3007
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/gixy?authSource=admin
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: info
+    env_file:
+      - .env.production
+    ports:
+      - "3007:3007"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gixy-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  gixy-network:
+    driver: bridge

@@ -1,0 +1,173 @@
+# Render Blueprint for Gixy AI Risk Manager
+# This file defines all services needed for deployment on Render
+
+services:
+  # -----------------------------------------
+  # Web Service - Main Application
+  # -----------------------------------------
+  - type: web
+    name: gixy-web
+    runtime: node
+    plan: starter
+    region: oregon
+    repo: https://github.com/pankaj-q/gixy
+    branch: main
+    buildCommand: npm ci --only=production
+    startCommand: node src/server.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        fromDatabase:
+          name: gixy-mongodb
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: gixy-redis
+          property: connectionString
+      - key: LOG_LEVEL
+        value: info
+      # LLM Provider - at least one required
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta
+      - key: GEMINI_DEFAULT_MODEL
+        value: gemini-1.5-flash
+      - key: RISK_ANALYSIS_PROVIDER
+        value: gemini
+      - key: COMPLIANCE_CHECKER_PROVIDER
+        value: gemini
+      - key: MODEL_CARD_GENERATOR_PROVIDER
+        value: gemini
+      # Optional alerting channels (set in Render dashboard)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: ALERT_FROM_EMAIL
+        sync: false
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+      - key: PAGERDUTY_ROUTING_KEY
+        sync: false
+      - key: OPSGENIE_API_KEY
+        sync: false
+      - key: OPSGENIE_REGION
+        value: us
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+    autoDeploy: true
+
+  # -----------------------------------------
+  # Worker Service - Background Jobs (Bull Queues)
+  # -----------------------------------------
+  - type: worker
+    name: gixy-worker
+    runtime: node
+    plan: starter
+    region: oregon
+    repo: https://github.com/pankaj-q/gixy
+    branch: main
+    buildCommand: npm ci --only=production
+    startCommand: node src/queues/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: gixy-mongodb
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: gixy-redis
+          property: connectionString
+      - key: LOG_LEVEL
+        value: info
+      - key: JWT_SECRET
+        fromService:
+          name: gixy-web
+          property: env.JWT_SECRET
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta
+      - key: GEMINI_DEFAULT_MODEL
+        value: gemini-1.5-flash
+      - key: RISK_ANALYSIS_PROVIDER
+        value: gemini
+      - key: COMPLIANCE_CHECKER_PROVIDER
+        value: gemini
+      - key: MODEL_CARD_GENERATOR_PROVIDER
+        value: gemini
+    scaling:
+      minInstances: 0
+      maxInstances: 2
+
+  # -----------------------------------------
+  # MongoDB Database
+  # -----------------------------------------
+  - type: mongodb
+    name: gixy-mongodb
+    plan: starter
+    region: oregon
+    version: "7.0"
+    databaseName: gixy
+    autoDeploy: false
+
+  # -----------------------------------------
+  # Redis for Queues and Caching
+  # -----------------------------------------
+  - type: redis
+    name: gixy-redis
+    plan: starter
+    region: oregon
+    version: "7"
+    maxmemoryPolicy: allkeys-lru
+    autoDeploy: false
+
+# -----------------------------------------
+# Environment Groups (for easy management)
+# -----------------------------------------
+envVarGroups:
+  - name: llm-providers
+    description: "LLM API Keys (at least one required)"
+    envVars:
+      - GEMINI_API_KEY
+      - OPENAI_API_KEY
+      - ANTHROPIC_API_KEY
+
+  - name: alerting
+    description: "Multi-channel alerting configuration"
+    envVars:
+      - SMTP_HOST
+      - SMTP_PORT
+      - SMTP_USER
+      - SMTP_PASS
+      - ALERT_FROM_EMAIL
+      - SLACK_WEBHOOK_URL
+      - PAGERDUTY_ROUTING_KEY
+      - OPSGENIE_API_KEY
+      - OPSGENIE_REGION
+
+  - name: core
+    description: "Core application settings"
+    envVars:
+      - NODE_ENV
+      - PORT
+      - JWT_SECRET
+      - MONGODB_URI
+      - REDIS_URL
+      - LOG_LEVEL
