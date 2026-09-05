@@ -81,7 +81,7 @@ services:
     repo: https://github.com/pankaj-q/gixy
     branch: main
     buildCommand: npm ci --only=production
-    startCommand: node src/queues/index.js
+    startCommand: node src/worker.mjs
     envVars:
       - key: NODE_ENV
         value: production

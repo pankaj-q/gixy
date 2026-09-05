@@ -3,7 +3,7 @@ import config from './config/index.js';
 import { connectDB, disconnectDB } from './config/db.js';
 import { logger } from './utils/logger.js';
 
-const PORT = config.port || 3000;
+const PORT = config.port || process.env.PORT || 3000;
 
 // Database connection
 await connectDB()
