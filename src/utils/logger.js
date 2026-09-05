@@ -17,16 +17,20 @@ const consoleFormat = winston.format.combine(
   })
 );
 
+// Determine if we should use file transports (only in local development)
+const useFileTransports = config.env === 'development' && process.env.NODE_ENV !== 'production';
+
 // Create logger instance
-export const logger = winston.createLogger({
-  level: config.logLevel,
-  format: logFormat,
-  defaultMeta: { service: 'ai-risk-manager' },
-  transports: [
-    // Console transport
-    new winston.transports.Console({
-      format: config.env === 'development' ? consoleFormat : logFormat
-    }),
+const transports = [
+  // Console transport (always enabled)
+  new winston.transports.Console({
+    format: config.env === 'development' ? consoleFormat : logFormat
+  })
+];
+
+// File transports (only in development/local environments)
+if (useFileTransports) {
+  transports.push(
     // File transport for errors
     new winston.transports.File({
       filename: path.join('logs', 'error.log'),
@@ -40,23 +44,32 @@ export const logger = winston.createLogger({
       maxsize: 5242880,
       maxFiles: 5
     })
-  ],
-  // Handle uncaught exceptions
-  exceptionHandlers: [
-    new winston.transports.File({
-      filename: path.join('logs', 'exceptions.log'),
-      maxsize: 5242880,
-      maxFiles: 5
-    })
-  ],
-  // Handle unhandled promise rejections
-  rejectionHandlers: [
-    new winston.transports.File({
-      filename: path.join('logs', 'rejections.log'),
-      maxsize: 5242880,
-      maxFiles: 5
-    })
-  ]
+  );
+}
+
+const exceptionHandlers = useFileTransports ? [
+  new winston.transports.File({
+    filename: path.join('logs', 'exceptions.log'),
+    maxsize: 5242880,
+    maxFiles: 5
+  })
+] : [];
+
+const rejectionHandlers = useFileTransports ? [
+  new winston.transports.File({
+    filename: path.join('logs', 'rejections.log'),
+    maxsize: 5242880,
+    maxFiles: 5
+  })
+] : [];
+
+export const logger = winston.createLogger({
+  level: config.logLevel,
+  format: logFormat,
+  defaultMeta: { service: 'ai-risk-manager' },
+  transports,
+  exceptionHandlers,
+  rejectionHandlers
 });
 
 // Create a child logger for specific modules
