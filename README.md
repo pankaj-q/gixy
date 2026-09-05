@@ -13,6 +13,7 @@ A production-ready platform for **AI model risk assessment, compliance checking,
 | **Alerting** | Multi-channel (Email, Slack, Webhook, PagerDuty, OpsGenie, In-App) with rules engine |
 | **Authentication** | JWT-based auth with role-based access (admin, analyst, viewer) |
 | **Data Persistence** | MongoDB Atlas with models, assessments, alerts, users |
+| **Background Jobs** | Bull queues with Redis for async LLM processing |
 
 ---
 
@@ -21,11 +22,20 @@ A production-ready platform for **AI model risk assessment, compliance checking,
 ```
 gixy/
 ├── .env                 # Environment config (copy from .env.example)
+├── .env.example         # Template with all configuration options
+├── .dockerignore        # Docker build exclusions
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml    # GitHub Actions CI/CD pipeline
+├── docker/
+│   └── mongo-init.js    # MongoDB initialization script
 ├── public/
 │   └── index.html       # Single-file dashboard (Framer Motion + Plotly + Lucide)
 ├── src/
 │   ├── index.mjs        # Express server entry point (ESM)
-│   ├── config/          # Configuration (DB, LLM providers, alerts)
+│   ├── server.mjs       # Production server startup
+│   ├── worker.mjs       # Background job worker (Bull queues)
+│   ├── config/          # Configuration (DB, LLM providers, alerts, Redis)
 │   ├── llm/             # LLM providers (Gemini, OpenAI, Anthropic) + engines
 │   │   ├── GeminiProvider.js
 │   │   ├── OpenAIProvider.js
@@ -33,19 +43,26 @@ gixy/
 │   │   ├── RiskAnalysisEngine.js
 │   │   ├── ComplianceChecker.js
 │   │   ├── ModelCardGenerator.js
-│   │   └── LLMProviderFactory.js
+│   │   ├── LLMProviderFactory.js
+│   │   └── config.js
 │   ├── alerts/          # Alerting system
 │   │   ├── AlertRulesEngine.js
 │   │   ├── AlertStore.js (Mongo + Memory)
 │   │   ├── NotificationManager.js
 │   │   └── channels/ (Email, Slack, Webhook, PagerDuty, OpsGenie, InApp)
-│   ├── api/
-│   │   └── routes.js    # REST API routes
 │   ├── models/          # Mongoose models (User, Model, Assessment, Alert)
 │   ├── engine/          # Heuristic risk engine (fallback)
-│   └── validation/      # Joi schemas
+│   ├── validation/      # Joi schemas
+│   ├── middleware/      # Auth, error handling, metrics
+│   ├── utils/           # Logger, metrics, helpers
+│   └── scripts/
+│       └── seed.js      # Database seeding script
 ├── tests/               # Jest unit tests (130+ passing)
-└── package.json
+├── package.json
+├── Dockerfile           # Multi-stage Docker build
+├── docker-compose.yml   # Local development stack (MongoDB + Redis + App)
+├── render.yaml          # Render.com blueprint deployment
+└── vercel.json          # Vercel serverless deployment config
 ```
 
 ---
@@ -55,6 +72,7 @@ gixy/
 - **Node.js** >= 18.x
 - **npm** >= 10.x
 - **MongoDB** (local or Atlas URI)
+- **Redis** (local or managed) - for background job queues
 - **LLM API Key** (at least one): Gemini (free), OpenAI, or Anthropic
 
 ---
@@ -63,7 +81,7 @@ gixy/
 
 ```bash
 # 1. Clone & install
-git clone https://github.com/your-org/gixy.git
+git clone https://github.com/pankaj-q/gixy.git
 cd gixy
 npm install
 
@@ -98,6 +116,11 @@ JWT_SECRET=your-32-char-random-string  # generate: openssl rand -base64 32
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/gixy
 
 # ============================================
+# REDIS (for background job queues)
+# ============================================
+REDIS_URL=redis://localhost:6379
+
+# ============================================
 # LLM PROVIDERS (at least ONE required)
 # ============================================
 
@@ -105,7 +128,7 @@ MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/gixy
 # Get key: https://aistudio.google.com/apikey
 GEMINI_API_KEY=your-gemini-key
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
-GEMINI_DEFAULT_MODEL=gemini-3.6-flash
+GEMINI_DEFAULT_MODEL=gemini-1.5-flash
 
 # OpenAI (optional fallback)
 # OPENAI_API_KEY=sk-your-openai-key
@@ -144,6 +167,12 @@ MODEL_CARD_GENERATOR_PROVIDER=gemini
 # LOGGING
 # ============================================
 LOG_LEVEL=info
+
+# ============================================
+# RATE LIMITING
+# ============================================
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
 ```
 
 ---
@@ -154,7 +183,7 @@ LOG_LEVEL=info
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET | `/health` | ❌ | Server health |
-| GET | `/api/v1/health` | ❌ | API health + DB status |
+| GET | `/api/v1/health` | ❌ | API health + DB/Redis/LLM status |
 | POST | `/api/public/risk/quick-check` | ❌ | Quick heuristic risk assessment |
 
 ### Authentication
@@ -176,7 +205,7 @@ LOG_LEVEL=info
 |--------|----------|-------------|
 | POST | `/api/v1/risk/assess` | Heuristic risk assessment |
 | POST | `/api/v1/compliance/check` | Heuristic compliance check |
-| GET | `/api/v1/risk/history` | Assessment history |
+| GET | `/api/v1/assessments` | Assessment history |
 
 ### Models & Registry (requires JWT)
 | Method | Endpoint | Description |
@@ -202,6 +231,13 @@ LOG_LEVEL=info
 | POST | `/api/v1/alerts/rules/:id/trigger` | Manually trigger rule |
 | POST | `/api/v1/alerts/channels` | Create notification channel |
 | GET | `/api/v1/alerts/channels` | List channels |
+
+### Queue & Monitoring
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/v1/queue/stats` | ✅ | Bull queue statistics |
+| GET | `/metrics` | ❌ | Prometheus metrics |
+| GET | `/metrics/json` | ❌ | Metrics as JSON |
 
 ---
 
@@ -259,35 +295,77 @@ Open `http://localhost:3007/dashboard` for a **professional single-page dashboar
 
 ---
 
-## 🧪 Testing
+## 🐳 Docker Deployment
 
+### Local Development
 ```bash
-# Run all tests
-npm test
+# Start full stack (MongoDB + Redis + App)
+npm run docker:dev
+# or
+docker-compose up -d
 
-# Run specific test suite
-npm test -- tests/unit/alerts.test.js
+# View logs
+docker-compose logs -f app-dev
 
-# Watch mode
-npm test -- --watch
+# Stop
+npm run docker:down
 ```
 
-**Test Coverage**: 130+ tests passing (types, channels, engine, store, manager, config, LLM providers)
+### Production
+```bash
+# Build image
+npm run docker:build
+# or
+docker build -t gixy .
+
+# Run container
+npm run docker:run
+# or
+docker run -p 3007:3007 --env-file .env gixy
+```
+
+### Docker Compose Services
+| Service | Port | Description |
+|---------|------|-------------|
+| `mongodb` | 27017 | MongoDB 7.0 with init script |
+| `redis` | 6379 | Redis 7 for queues/caching |
+| `app-dev` | 3007 | Development app with hot reload |
+| `app-prod` | 3007 | Production app (optimized) |
 
 ---
 
-## 🐳 Docker
+## ☁️ Cloud Deployment
+
+### Render (Recommended)
+
+**Why Render?** Native support for background workers, managed MongoDB/Redis, no serverless limits.
+
+1. Push to GitHub
+2. Go to [Render Dashboard](https://dashboard.render.com) → **New +** → **Blueprint**
+3. Connect repo `pankaj-q/gixy`
+4. Add required environment variable in **both services**:
+   - `GEMINI_API_KEY` = your Gemini API key
+5. Click **Apply**
+
+**Services Created:**
+- `gixy-web` - Web service (Express API + Dashboard)
+- `gixy-worker` - Background worker (Bull queue processors)
+- `gixy-mongodb` - Managed MongoDB
+- `gixy-redis` - Managed Redis
+
+### Vercel (Serverless)
+
+**Limitations:** No background workers, function timeouts (10-60s), connection pooling required.
 
 ```bash
-# Build
-docker build -t gixy .
+# Install Vercel CLI
+npm i -g vercel
 
-# Run with docker-compose
-docker-compose up -d
-
-# Or run directly
-docker run -p 3007:3007 --env-file .env gixy
+# Deploy
+vercel --prod
 ```
+
+Configured via `vercel.json` - serves API + static dashboard.
 
 ---
 
@@ -296,10 +374,22 @@ docker run -p 3007:3007 --env-file .env gixy
 ```json
 {
   "scripts": {
-    "start": "node --experimental-vm-modules src/index.mjs",
-    "dev": "node --experimental-vm-modules -r dotenv/config src/index.mjs",
-    "test": "node --experimental-vm-modules -r dotenv/config node_modules/.bin/jest",
-    "test:watch": "npm test -- --watch"
+    "start": "node src/server.mjs",
+    "start:prod": "NODE_ENV=production node src/server.mjs",
+    "dev": "nodemon src/server.mjs",
+    "test": "jest --coverage --testPathIgnorePatterns=tests/integration",
+    "test:all": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "lint": "eslint .",
+    "build": "echo \"Build step\" && exit 0",
+    "docker:build": "docker build -t gixy .",
+    "docker:run": "docker run -p 3007:3007 --env-file .env gixy",
+    "docker:dev": "docker-compose up -d",
+    "docker:prod": "docker-compose -f docker-compose.yml up -d app-prod",
+    "docker:down": "docker-compose down",
+    "db:seed": "node src/scripts/seed.js"
   }
 }
 ```
@@ -321,6 +411,18 @@ docker run -p 3007:3007 --env-file .env gixy
 2. Implement: `send(notification)`, `validateConfig()`, `testConnection()`
 3. Export in `src/alerts/channels/index.js`
 
+### Running Background Worker Locally
+
+```bash
+# Terminal 1: Start Redis
+docker run -d -p 6379:6379 redis:7-alpine
+
+# Terminal 2: Start worker
+npm run dev  # starts server
+# In another terminal:
+node src/worker.mjs  # starts queue processors
+```
+
 ---
 
 ## 🚨 Troubleshooting
@@ -329,9 +431,13 @@ docker run -p 3007:3007 --env-file .env gixy
 |-------|----------|
 | Dashboard blank | Check browser console; Framer Motion CDN may be blocked - content still works |
 | MongoDB connection failed | Verify `MONGODB_URI` in `.env`, check Atlas IP whitelist |
+| Redis connection failed | Verify `REDIS_URL`, check if Redis is running |
 | LLM calls fail | Verify API key in `.env`, check rate limits, check model name |
-| Port 3007 busy | Change `PORT` in `.env` or kill existing: `pkill -f "node.*src/index.mjs"` |
+| Port 3007 busy | Change `PORT` in `.env` or kill existing: `pkill -f "node.*src/server.mjs"` |
 | JWT errors | Ensure `JWT_SECRET` is 32+ chars, same across restarts |
+| Worker not processing jobs | Check Redis connection, verify `GEMINI_API_KEY` in worker env |
+| Docker permission denied | Ensure Docker daemon running, user in docker group |
+| Render deploy fails | Check build logs, verify `GEMINI_API_KEY` set in dashboard for both services |
 
 ---
 
@@ -354,3 +460,5 @@ MIT License - see LICENSE file for details.
 ## 📞 Support
 
 For issues, open a GitHub issue or check the `/health` endpoint for system status.
+
+**Live Demo:** https://gixy.onrender.com/dashboard
