@@ -82,7 +82,27 @@ export const assessRiskSchema = Joi.object({
 export const quickCheckSchema = Joi.object({
   modelId: modelIdSchema,
   modelName: modelNameSchema,
-  riskFactors: riskFactorsSchema
+  modelConfig: Joi.object({
+    type: Joi.string().valid('classification', 'regression', 'generative', 'clustering', 'recommendation', 'anomaly_detection', 'other').optional(),
+    framework: Joi.string().valid('xgboost', 'lightgbm', 'pytorch', 'tensorflow', 'sklearn', 'onnx', 'other').optional(),
+    algorithm: Joi.string().optional(),
+    hyperparameters: Joi.object().optional()
+  }).optional(),
+  deploymentContext: Joi.string().max(2000).optional(),
+  riskFactors: riskFactorsSchema,
+  metrics: Joi.object({
+    accuracy: Joi.number().min(0).max(1).optional(),
+    precision: Joi.number().min(0).max(1).optional(),
+    recall: Joi.number().min(0).max(1).optional(),
+    f1: Joi.number().min(0).max(1).optional(),
+    f1Score: Joi.number().min(0).max(1).optional(),
+    f1_score: Joi.number().min(0).max(1).optional(),
+    aucRoc: Joi.number().min(0).max(1).optional(),
+    rmse: Joi.number().min(0).optional(),
+    mae: Joi.number().min(0).optional(),
+    r2: Joi.number().min(0).max(1).optional()
+  }).optional(),
+  useLLM: Joi.boolean().optional()
 }).messages({
   'object.unknown': 'Unknown field: {{#key}}'
 });
